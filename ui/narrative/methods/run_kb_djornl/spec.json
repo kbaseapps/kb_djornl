@@ -9,7 +9,27 @@
         "input": null,
         "output": null
     },
-    "parameters": [ 
+    "parameters": [
+        {
+            "advanced": "false",
+            "allow_multiple": "false",
+            "field_type": "text",
+            "id": "gene_keys",
+            "optional": "true"
+        },
+        {
+            "advanced": false,
+            "allow_multiple": false,
+            "default_values": [ "1" ],
+            "field_type": "text",
+            "id": "distance",
+            "optional": false,
+            "text_options": {
+                "max_int" : 3,
+                "min_int" : 0,
+                "validate_as": "int"
+            }
+        },
         {
             "id": "parameter_1",
             "optional": true,
@@ -31,10 +51,20 @@
                 {
                     "narrative_system_variable": "workspace",
                     "target_property": "workspace_name"
-                },{
+                },
+                {
                     "narrative_system_variable": "workspace_id",
                     "target_property": "workspace_id"
-                },{
+                },
+                {
+                    "input_parameter": "gene_keys",
+                    "target_property": "gene_keys"
+                },
+                {
+                    "input_parameter": "distance",
+                    "target_property": "distance"
+                },
+                {
                     "input_parameter": "parameter_1",
                     "target_property": "parameter_1"
                 }

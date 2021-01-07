@@ -4,6 +4,7 @@ import logging
 import os
 
 from installed_clients.KBaseReportClient import KBaseReport
+from . import run
 #END_HEADER
 
 
@@ -24,7 +25,7 @@ class kb_djornl:
     ######################################### noqa
     VERSION = "0.0.1"
     GIT_URL = ""
-    GIT_COMMIT_HASH = "69ee0ebdf01da7a912ed94899e12c1a4e4311ad8"
+    GIT_COMMIT_HASH = "f6f700aa0810055e82cf2d30dfbc5ef47b54d8c2"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -51,14 +52,12 @@ class kb_djornl:
         # ctx is the context object
         # return variables are: output
         #BEGIN run_kb_djornl
-        report = KBaseReport(self.callback_url)
-        report_info = report.create({'report': {'objects_created':[],
-                                                'text_message': params['parameter_1']},
-                                                'workspace_name': params['workspace_name']})
-        output = {
-            'report_name': report_info['name'],
-            'report_ref': report_info['ref'],
-        }
+        report = KBaseReport(self.callback_url, service_ver="dev")
+        config = dict(
+            params=params,
+            shared=self.shared_folder,
+        )
+        output = run(config, report)
         #END run_kb_djornl
 
         # At some point might do deeper type checking...

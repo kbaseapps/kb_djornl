@@ -1,7 +1,7 @@
 [ {
   "module_name" : "KBaseReport",
   "type" : "sdk",
-  "version_tag" : "release"
+  "version_tag" : "dev"
 }, {
   "module_name" : "Workspace",
   "type" : "core",
