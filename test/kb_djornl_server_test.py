@@ -88,8 +88,9 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "parameter_1": param,
             },
         )
-        out = self.wsClient.get_objects2({"objects": [{"ref": ret[0]["report_ref"]}]})
+        ref = ret[0]["report_ref"]
+        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
         report = out["data"][0]["data"]
-        print(">>>>>>>REPORT")
+        print(f">>>>>>>REPORT, ref: {ref}")
         pprint(report)
         self.assertEqual(out["data"][0]["data"]["text_message"], param)

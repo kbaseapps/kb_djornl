@@ -10,6 +10,9 @@ from collections import Counter
 
 import pandas as pd
 
+from jinja2 import Environment, PackageLoader, select_autoescape
+
+
 from relation_engine_client import REClient
 
 DATA_ROOT = "/opt/work/exascale_data/"
@@ -166,8 +169,17 @@ def run(config, report):  # pylint: disable=too-many-locals
             for row in table
         ]
     )
+    env = Environment(
+        loader=PackageLoader('kb_djornl', 'templates'),
+        autoescape=select_autoescape(['html'])
+    )
+    template = env.get_template('index.html')
+    ctx = template.new_context(vars=dict(content=table_html, title="HTML REPORT"))
+    out = template.render(ctx)
+
     with open(os.path.join(reports_path, "index.html"), "w") as report_file:
-        report_file.write(f"HTML REPORT <table>{table_html}</table>")
+        # report_file.write(f"HTML REPORT <table>{table_html}</table>")
+        report_file.write(out)
 
     html_links = [
         {
@@ -182,7 +194,7 @@ def run(config, report):  # pylint: disable=too-many-locals
         },
         {
             "description": "graphviz png",
-            "name": "djonrl.png",
+            "name": "djornl.png",
             "path": reports_path,
         },
     ]
