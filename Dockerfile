@@ -1,7 +1,8 @@
 FROM kbase/sdkbase2:python
 MAINTAINER KBase Developer
 
-RUN apt-get update
+# CV is to ensure the cache is not used
+RUN CV=000 apt-get update
 RUN apt-get install -y graphviz
 
 RUN mkdir -p /kb/module/work

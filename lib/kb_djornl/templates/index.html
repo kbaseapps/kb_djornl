@@ -1,12 +1,18 @@
 <!doctype html>
 <html lang="en">
-<head>
+ <head>
 {% block header %}{% endblock %}
   <title>{{title}}</title>
-</head>
-<body>
-<div class="container-fluid kb-html-report">
+  <link rel="stylesheet" href="kb_djornl.css">
+  <script src="https://unpkg.com/weaverjs@1.2.0/dist/weaver.min.js" defer></script>
+  <script src="https://cytoscape.org/cytoscape.js-spread/cytoscape-spread.js" defer></script>
+  <script src="kb_djornl.js" type="module"></script>
+ </head>
+ <body>
+  <div id="cy"></div>
+  </div>
+  <div class="container-fluid kb-html-report">
 {% block content %}{{ content }}{% endblock %}
-</div>
-</body>
+  </div>
+ </body>
 </html>

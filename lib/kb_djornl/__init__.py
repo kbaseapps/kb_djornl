@@ -1,6 +1,8 @@
 """ kb_djornl code """
 
+import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import time
@@ -120,6 +122,22 @@ def run(config, report):  # pylint: disable=too-many-locals
     nodes = response["results"][0]["nodes"]
     edges = response["results"][0]["edges"]
 
+    def cytoscape_edge(edge):
+        return dict(
+            id=edge["_id"],
+            source=edge["_from"],
+            target=edge["_to"],
+            label=edge["edge_type"],
+        )
+
+    cytoscape_nodes = [dict(data=dict(id=node["_id"])) for node in nodes]
+    cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
+    cytoscape_data = cytoscape_nodes + cytoscape_edges
+    cytoscape_path = os.path.join(reports_path, "djornl.json")
+    with open(cytoscape_path, "w") as cytoscape_json:
+        cytoscape_json.write(json.dumps(cytoscape_data))
+
+    # grapviz biz
     graphviz_nodes = {node["_id"] for node in nodes}
     [  # pylint: disable=expression-not-assigned
         (graphviz_nodes.add(edge["_from"]), graphviz_nodes.add(edge["_to"]))
@@ -143,6 +161,8 @@ def run(config, report):  # pylint: disable=too-many-locals
         report_file.write(graphviz)
     graphviz_png_path = os.path.join(reports_path, "djornl.png")
     subprocess.call(f"sfdp -Tpng {graphviz_path} -o {graphviz_png_path}".split(" "))
+
+    # nodes_requested === seed node
     nodes_requested = [
         node for node in nodes if check_gene_key_match(gene_keys, node["_id"])
     ]
@@ -169,17 +189,25 @@ def run(config, report):  # pylint: disable=too-many-locals
             for row in table
         ]
     )
-    env = Environment(
-        loader=PackageLoader('kb_djornl', 'templates'),
-        autoescape=select_autoescape(['html'])
+    env = Environment(loader=PackageLoader("kb_djornl", "templates"))
+    template = env.get_template("index.html")
+    ctx = template.new_context(
+        vars=dict(content=f"<table>{table_html}</table>", title="HTML REPORT")
     )
-    template = env.get_template('index.html')
-    ctx = template.new_context(vars=dict(content=table_html, title="HTML REPORT"))
     out = template.render(ctx)
 
     with open(os.path.join(reports_path, "index.html"), "w") as report_file:
-        # report_file.write(f"HTML REPORT <table>{table_html}</table>")
         report_file.write(out)
+
+    # include javascript app assets in report
+    shutil.copy(
+        "/kb/module/report/kb_djornl.js",
+        os.path.join(reports_path, "kb_djornl.js"),
+    )
+    shutil.copy(
+        "/kb/module/report/kb_djornl.css",
+        os.path.join(reports_path, "kb_djornl.css"),
+    )
 
     html_links = [
         {
