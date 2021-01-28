@@ -11,9 +11,9 @@ import uuid
 from collections import Counter
 
 import pandas as pd
+import yaml
 
 from jinja2 import Environment, PackageLoader, select_autoescape
-
 
 from relation_engine_client import REClient
 
@@ -111,6 +111,15 @@ def run(config, report):  # pylint: disable=too-many-locals
     reports_path = os.path.join(shared, "reports")
     os.mkdir(reports_path)
 
+    # manifest
+    manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
+    with open(manifest_path) as manifest_file:
+        manifest = yaml.safe_load(manifest_file)
+    edge_types = {
+        entry["path"]: entry["title"]
+        for entry in manifest["file_list"]
+        if entry["data_type"] == "edge"
+    }
     re_client = REClient(
         "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
     )
@@ -122,15 +131,23 @@ def run(config, report):  # pylint: disable=too-many-locals
     nodes = response["results"][0]["nodes"]
     edges = response["results"][0]["edges"]
 
+    def cytoscape_node(node):
+        return dict(
+            id=node["_id"],
+            type="node",
+            go_terms=node.get("go_terms", []),
+        )
+
     def cytoscape_edge(edge):
         return dict(
             id=edge["_id"],
+            label=edge["edge_type"],
             source=edge["_from"],
             target=edge["_to"],
-            label=edge["edge_type"],
+            type="edge",
         )
 
-    cytoscape_nodes = [dict(data=dict(id=node["_id"])) for node in nodes]
+    cytoscape_nodes = [dict(data=cytoscape_node(node)) for node in nodes]
     cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
     cytoscape_data = cytoscape_nodes + cytoscape_edges
     cytoscape_path = os.path.join(reports_path, "djornl.json")

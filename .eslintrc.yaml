@@ -1,0 +1,49 @@
+env:
+  browser: true
+  es6: true
+  jquery: true
+extends:
+  - 'eslint:recommended'
+  - prettier
+  - 'plugin:prettier/recommended'
+parserOptions:
+    ecmaVersion: 2018
+    sourceType: module
+    ecmaFeatures:
+      impliedStrict: true
+
+root: true
+rules:
+  strict:
+    - error
+    - function
+  linebreak-style:
+    - error
+    - unix
+  quotes:
+    - error
+    - single
+  semi:
+    - error
+    - always
+  func-names: 0
+  require-await: 2
+  no-bitwise: 0
+  no-confusing-arrow: 2
+  no-console: 1
+  no-const-assign: 2
+  no-duplicate-imports: 2
+  no-mixed-operators: 1
+  no-param-reassign: 1
+  no-plusplus: 0
+  no-underscore-dangle: 0
+  no-use-before-define: 1
+  no-useless-computed-key: 2
+  no-useless-rename: 2
+  no-var: 2
+  prefer-arrow-callback: 2
+  prefer-const: 2
+  prefer-rest-params: 1
+  prefer-spread: 1
+  prefer-template: 1
+  prettier/prettier: error

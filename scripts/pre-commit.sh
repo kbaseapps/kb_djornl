@@ -49,5 +49,6 @@ fi
 python -m black \
     lib/kb_djornl/__init__.py \
     test
+npm run fix
 # If there are whitespace errors, print the offending file names and fail.
 exec git diff-index --check --cached $against --
