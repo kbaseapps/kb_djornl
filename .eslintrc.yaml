@@ -2,6 +2,7 @@ env:
   browser: true
   es6: true
   jquery: true
+  node: true
 extends:
   - 'eslint:recommended'
   - prettier
@@ -14,15 +15,18 @@ parserOptions:
 
 root: true
 rules:
-  strict:
+  camelcase:
     - error
-    - function
+    - ignoreDestructuring: true
   linebreak-style:
     - error
     - unix
   quotes:
     - error
     - single
+  strict:
+    - error
+    - function
   semi:
     - error
     - always

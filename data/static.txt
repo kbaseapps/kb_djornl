@@ -1,0 +1,15 @@
+/narrative/static/components/font-awesome/fonts/fontawesome-webfont.eot
+/narrative/static/components/font-awesome/fonts/fontawesome-webfont.svg
+/narrative/static/components/font-awesome/fonts/fontawesome-webfont.ttf
+/narrative/static/components/font-awesome/fonts/fontawesome-webfont.woff
+/narrative/static/components/font-awesome/fonts/fontawesome-webfont.woff2
+/narrative/static/kbase/css/kbaseStylesheet.css
+/narrative/static/kbase/fonts/Oxygen-Bold-webfont.eot
+/narrative/static/kbase/fonts/Oxygen-Bold-webfont.svg
+/narrative/static/kbase/fonts/Oxygen-Bold-webfont.ttf
+/narrative/static/kbase/fonts/Oxygen-Bold-webfont.woff
+/narrative/static/kbase/fonts/Oxygen-webfont.eot
+/narrative/static/kbase/fonts/Oxygen-webfont.svg
+/narrative/static/kbase/fonts/Oxygen-webfont.ttf
+/narrative/static/kbase/fonts/Oxygen-webfont.woff
+/narrative/static/style/style.min.css
