@@ -83,7 +83,9 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             self.ctx,
             {
                 "workspace_name": self.wsName,
-                "gene_keys": "AT1G01100 AT1G18590",
+                "gene_keys": "ATCG00280",  # 7 nodes, 19 edges
+                # "gene_keys": "AT1G01100 AT1G18590", # 23 nodes, 52 egdes
+                # "gene_keys": "AT3G13175",  # 125 nodes, 478 edges
                 "distance": "1",
                 "parameter_1": param,
             },

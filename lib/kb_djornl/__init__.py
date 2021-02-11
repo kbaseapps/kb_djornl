@@ -109,7 +109,15 @@ def run(config, report):  # pylint: disable=too-many-locals
     params = config.get("params")
     shared = config.get("shared")
     reports_path = os.path.join(shared, "reports")
-    os.mkdir(reports_path)
+    # include javascript app assets in report
+    shutil.copytree(
+        "/kb/module/report/",
+        os.path.join(reports_path),
+    )
+    subprocess.run(
+        f"npm run build -- --mode production --output-path {reports_path}".split(" "),
+        check=True,
+    )
 
     # manifest
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
@@ -120,6 +128,8 @@ def run(config, report):  # pylint: disable=too-many-locals
         for entry in manifest["file_list"]
         if entry["data_type"] == "edge"
     }
+    print("edge_types", edge_types)
+    # arango query
     re_client = REClient(
         "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
     )
@@ -135,51 +145,44 @@ def run(config, report):  # pylint: disable=too-many-locals
         return dict(
             id=node["_id"],
             type="node",
-            go_terms=node.get("go_terms", []),
+            geneSymbol=node.get("gene_symbol", ""),
+            GOTerms=node.get("go_terms", []),
+            mapmanBin=node.get("mapman_bin", ""),
+            mapmanName=node.get("mapman_name", ""),
+            mapman=dict(
+                bin=node.get("mapman_bin", ""),
+                desc=node.get("mapman_desc"),
+                name=node.get("mapman_name"),
+            ),
         )
 
     def cytoscape_edge(edge):
         return dict(
             id=edge["_id"],
-            label=edge["edge_type"],
+            edgeType=edge["edge_type"],
             source=edge["_from"],
             target=edge["_to"],
             type="edge",
         )
 
+    # graph data
     cytoscape_nodes = [dict(data=cytoscape_node(node)) for node in nodes]
     cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
     cytoscape_data = cytoscape_nodes + cytoscape_edges
     cytoscape_path = os.path.join(reports_path, "djornl.json")
     with open(cytoscape_path, "w") as cytoscape_json:
         cytoscape_json.write(json.dumps(cytoscape_data))
-
-    # grapviz biz
-    graphviz_nodes = {node["_id"] for node in nodes}
-    [  # pylint: disable=expression-not-assigned
-        (graphviz_nodes.add(edge["_from"]), graphviz_nodes.add(edge["_to"]))
-        for edge in edges
-    ]
-    graphviz_nodes_data = [
-        f""""{node}" [label="{node}"]""" for node in sorted(list(graphviz_nodes))
-    ]
-    graphviz_edges_data = [
-        f""""{edge["_from"]}" -> "{edge["_to"]}" [label="{edge["edge_type"]}"]"""
-        for edge in edges
-    ]
-    graphviz_head = "digraph djornl {"
-    graphviz_tail = "}"
-    graphviz = "\n".join(
-        [graphviz_head, *graphviz_nodes_data, *graphviz_edges_data, graphviz_tail]
+    # graph metadata
+    cytoscape_metadata = dict(
+        nodes=len(nodes),
+        edges=len(edges),
     )
+    cytoscape_metadata_path = os.path.join(reports_path, "djornl-metadata.json")
+    with open(cytoscape_metadata_path, "w") as cytoscape_metadata_json:
+        cytoscape_metadata_json.write(json.dumps(cytoscape_metadata))
 
-    graphviz_path = os.path.join(reports_path, "djornl.gv")
-    with open(graphviz_path, "w") as report_file:
-        report_file.write(graphviz)
-    graphviz_png_path = os.path.join(reports_path, "djornl.png")
-    subprocess.call(f"sfdp -Tpng {graphviz_path} -o {graphviz_png_path}".split(" "))
-
-    # nodes_requested === seed node
+    # cluster data
+    ## nodes_requested === seed node
     nodes_requested = [
         node for node in nodes if check_gene_key_match(gene_keys, node["_id"])
     ]
@@ -206,40 +209,22 @@ def run(config, report):  # pylint: disable=too-many-locals
             for row in table
         ]
     )
+    table_content = f"<table>{table_html}</table>"
+    print(table_content)
+    title_genes = params.get("gene_keys", "")
+    report_title = f"Arabidopsis thaliana genes: {title_genes}"
     env = Environment(loader=PackageLoader("kb_djornl", "templates"))
     template = env.get_template("index.html")
-    ctx = template.new_context(
-        vars=dict(content=f"<table>{table_html}</table>", title="HTML REPORT")
-    )
+    ctx = template.new_context(vars=dict(content="", title=report_title))
     out = template.render(ctx)
 
     with open(os.path.join(reports_path, "index.html"), "w") as report_file:
         report_file.write(out)
 
-    # include javascript app assets in report
-    shutil.copy(
-        "/kb/module/report/kb_djornl.js",
-        os.path.join(reports_path, "kb_djornl.js"),
-    )
-    shutil.copy(
-        "/kb/module/report/kb_djornl.css",
-        os.path.join(reports_path, "kb_djornl.css"),
-    )
-
     html_links = [
         {
             "description": "report",
             "name": "index.html",
-            "path": reports_path,
-        },
-        {
-            "description": "graphviz source",
-            "name": "djornl.gv",
-            "path": reports_path,
-        },
-        {
-            "description": "graphviz png",
-            "name": "djornl.png",
             "path": reports_path,
         },
     ]
