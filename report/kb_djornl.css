@@ -1,7 +1,239 @@
+:root{
+  --cyanobacteria_teal: #009688;
+  --rainier_cherry_red: #d2232a;
+  --freshwater_blue: #037ac0;
+  --microbe_orange: #f78e1e;
+  --lupine_purple: #66489d;
+  --spring_green: #c1cd23;
+  --graphite_grey: #9d9389;
+  --frost_blue: #c7dbee;
+  --golden_yellow: #ffd200;
+  --ocean_blue: #72ccd2;
+  --grass_green: #5e9732;
+  --app-height: 60vh;
+  --app-width: 90vh;
+}
+
+div.kb-html-report {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+ul._tippy {
+  list-style-type: none;
+  padding-inline-start: 0;
+}
+
 #cy {
-  width: 600px;
-  height: 300px;
+  border: 1px solid #000;
+  border-radius: 4px;
   display: block;
+  height: var(--app-height);
+  width: var(--app-width);
+}
+
+#legend {
+  height: var(app-height);
+  list-style-type: none;
+  overflow: hidden;
+  padding: 1em;
+  position: relative;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+#legend::after {
+  content: "Edge color indicates a line of evidence from a source above.";
+  display: block;
+  font-size: .8em;
+  margin: 1em auto;
+}
+
+#legend::before {
+  content: "Legend";
+  font-size: 150%;
+  font-weight: bold;
+  left: 0px;
+  margin-bottom: 1em;
+  text-align: center;
+  width: 100%;
+}
+
+#legend li {
+  padding: 1em;
+}
+
+#node-data {
+  height: 0; /* cell content bug fix */
+  margin-top: 1em;
+  padding: 1em;
+  width: 100%;
+}
+
+#node-data div {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+#node-data input[type=checkbox] {
+  display: none;
+}
+
+#node-data input[type=checkbox] + label::before {
+  font: normal normal normal 36px/1 FontAwesome;
+  content: "\f204"
+}
+
+#node-data input[type=checkbox]:checked + label::before {
+  content: "\f205";
+}
+
+#node-data label {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: space-around;
+  width: 100%;
+}
+
+#node-data li {
+  display: inline;
+}
+
+#node-data li:after {
+  content: ", ";
+}
+
+#node-data li:last-child:after, #node-data li:nth-last-child(2):after {
+  content: "";
+}
+
+#node-data li:last-child:before {
+  content: " and ";
+}
+
+#node-data li:first-child:before {
+  content: "";
+}
+
+#node-data td, #node-data th {
+  border-left: 1px solid #000;
+  height: 100%;
+  max-width: 200px;
+  min-width: 100px;
+  padding: .5em;
+}
+
+#node-data td:first-child, #node-data th:first-child {
+  border-left: none;
+  padding-left: 1em;
+}
+
+#node-data td:last-child, #node-data th:last-child {
+  padding-right: 1em;
+}
+
+#node-data th {
+  background-color: #def;
+  border-bottom: 2px solid #000;
+}
+
+#node-data th span {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+#node-data tr {
+  height: 100%;
+  padding: 1em;
+}
+
+#node-data tr:first-child th:first-child {
+  border-top-left-radius: 4px;
+}
+
+#node-data tr:first-child th:last-child {
+  border-top-right-radius: 4px;
+}
+
+#node-data tr:nth-child(odd) {
+  background: #def;
+}
+
+#node-data tr:nth-child(even) {
+  background: #fff;
+}
+
+#node-data tr.highlight {
+  background-color: #a0ccf0;
+}
+
+#node-data ul {
+  padding-inline-start: 0;
+}
+
+#node-data .ui {
+  padding: 0;
+}
+
+.cyanobacteria_teal {
+  background-color: var(--cyanobacteria_teal);
+  color: #ffffff;
+}
+
+.frost_blue {
+  background-color: var(--frost_blue);
+  color: #000000;
+}
+
+.freshwater_blue {
+  background-color: var(--freshwater_blue);
+  color: #ffffff;
+}
+
+.golden_yellow {
+  background-color: var(--golden_yellow);
+  color: #000000;
+}
+
+.graphite_grey {
+  background-color: var(--graphite_grey);
+  color: #000000;
+}
+
+.grass_green {
+  background-color: var(--grass_green);
+  color: #ffffff;
+}
+
+.lupine_purple {
+  background-color: var(--lupine_purple);
+  color: #ffffff;
+}
+
+.microbe_orange {
+  background-color: var(--microbe_orange);
+  color: #000000;
+}
+
+.ocean_blue {
+  background-color: var(--ocean_blue);
+  color: #000000;
+}
+
+.rainier_cherry_red {
+  background-color: var(--rainier_cherry_red);
+  color: #ffffff;
+}
+
+.spring_green {
+  background-color: var(--spring_green);
+  color: #000000;
 }
 
 .tippy-popper {

@@ -3,19 +3,15 @@
  <head>
 {% block header %}{% endblock %}
   <title>{{title}}</title>
+  <link rel="stylesheet" type="text/css" href="/narrative/static/style/style.min.css">
+  <link rel="stylesheet" type="text/css" href="/narrative/static/kbase/css/kbaseStylesheet.css">
   <link rel="stylesheet" href="kb_djornl.css">
-  <script src="https://unpkg.com/weaverjs@1.2.0/dist/weaver.min.js" defer></script>
-  <script src="https://unpkg.com/@popperjs/core@2.6.0/dist/umd/popper.min.js" defer></script>
-  <script src="https://unpkg.com/tippy.js@6.2.7/dist/tippy-bundle.umd.min.js" defer></script>
-  <script src="https://unpkg.com/cytoscape@3.18.0/dist/cytoscape.umd.js" defer></script>
-  <script src="https://unpkg.com/cytoscape-spread@3.0.0/cytoscape-spread.js" defer></script>
-  <script src="https://unpkg.com/cytoscape-popper@2.0.0/cytoscape-popper.js" defer></script>
-  <script src="kb_djornl.js" type="module"></script>
+  <script src="main.js" defer></script>
  </head>
  <body>
-  <div id="cy"></div>
-  </div>
   <div class="container-fluid kb-html-report">
+    <div id="cy"></div>
+    <ul id="legend"></ul>
 {% block content %}{{ content }}{% endblock %}
   </div>
  </body>

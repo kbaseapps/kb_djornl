@@ -1,51 +1,23 @@
-const cytoscape = window.cytoscape;
-const tippy = window.tippy;
-const cytoscapeSpread = window.cytoscapeSpread;
-const RAINIER_CHERRY_RED = '#d2232a';
-const color_palette = [
-  '#009688', // cyanobacteria_teal
-  RAINIER_CHERRY_RED,
-  '#037ac0', // freshwater_blue
-  '#f78e1e', // microbe orange
-  '#66489d', // lupine purple
-  '#c1cd23', // spring green
-  '#9d9389', // graphite grey
-  '#c7dbee', // frost_blue
-  '#ffd200', // golden yellow
-  '#72ccd2', // ocean_blue
-  '#5e9732', // grass green
-];
-const label_palette = [
-  '#ffffff',
-  '#ffffff',
-  '#ffffff',
-  '#000000',
-  '#ffffff',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#000000',
-  '#ffffff',
-];
-const colors_assigned = {};
-const edge_colors = (edge_type) => {
-  if (edge_type in colors_assigned) {
-    return colors_assigned[edge_type];
-  }
-  const n_colors = Object.keys(colors_assigned).length;
-  const colorIndex = n_colors % color_palette.length;
-  const colorBg = color_palette[colorIndex];
-  const colorFg = label_palette[colorIndex];
-  colors_assigned[edge_type] = [colorBg, colorFg];
-  return [colorBg, colorFg];
-};
+// kb_djornl cytoscape display
+// Third-party dependencies
+import 'regenerator-runtime/runtime';
+import cytoscape from 'cytoscape';
+import popper from 'cytoscape-popper';
+
+// Local dependencies
+import { formatLegend, makeTippy, renderTable, tippyContent } from './app/dom.js';
+import { cytoscapeStyle, edgeColorClass, edgeColors, edgeNames } from './app/style.js';
+/* element data */
+const ColorClassAssigned = {};
 const annotateEdge = (edge) => {
-  const [colorBg, colorFg] = edge_colors(edge.data.label);
+  const colorClass = edgeColorClass(edge.data.edgeType, ColorClassAssigned);
+  const [colorBg, colorFg] = edgeColors(edge.data.edgeType);
   edge.data = {
     ...edge.data,
-    fg: colorFg,
     bg: colorBg,
+    fg: colorFg,
+    className: colorClass,
+    label: edgeNames[edge.data.edgeType],
   };
   return edge;
 };
@@ -54,6 +26,7 @@ const annotateNode = (node) => {
     ...node.data,
     collected: false,
     name: node.data.id.split('/')[1],
+    selected: false,
     tippy: false,
   };
   return node;
@@ -64,190 +37,103 @@ const annotations = {
 };
 const annotateElements = (elements) =>
   elements.map((element) => annotations[element.data.type](element));
-// style for nodes and elements
-const cytoscapeStyle = [
-  {
-    selector: 'node',
-    style: {
-      'background-color': 'mapData(id.length, 0, 15, #000, #4682b4)',
-      content: 'data(name)',
-      shape: 'round-rectangle',
-      'text-halign': 'center',
-      'text-outline-color': '#4682b4',
-      'text-outline-width': '2px',
-      'text-valign': 'center',
-      width: '100px',
-    },
-  },
-  {
-    selector: 'node.collected',
-    style: {
-      'border-width': 4,
-      'border-style': 'solid',
-      'border-color': RAINIER_CHERRY_RED,
-      'border-opacity': 1,
-    },
-  },
-  {
-    selector: 'node:selected',
-    style: {
-      'border-color': '#e77943',
-      'border-width': '4px',
-      label: 'data(name)',
-    },
-  },
-  {
-    selector: 'node.phenotype',
-    style: {
-      width: 50,
-      height: 50,
-      shape: 'round-diamond',
-    },
-  },
-  {
-    selector: 'edge',
-    style: {
-      color: 'data(fg)',
-      'curve-style': 'bezier',
-      'font-weight': 'bold',
-      'line-color': 'data(bg)',
-      'text-outline-color': 'data(bg)',
-      'text-outline-width': '2px',
-      width: 3,
-      'z-index': 1,
-    },
-  },
-  {
-    selector: 'edge:selected',
-    style: {
-      label: 'data(label)',
-    },
-  },
-];
-const makeTippy = function (ele, text) {
-  const ref = ele.popperRef();
-  const dummyDomEle = document.createElement('div');
-  const tip = tippy(dummyDomEle, {
-    // your own preferences:
-    appendTo: document.body, // or append dummyDomEle to document.body
-    arrow: true,
-    content: () => {
-      const div = document.createElement('div');
-      div.appendChild(document.createTextNode(text));
-      return div;
-    },
-    hideOnClick: false,
-    getReferenceClientRect: ref.getBoundingClientRect,
-    interactive: true,
-    placement: 'bottom',
-    sticky: 'reference',
-    trigger: 'manual',
-  });
 
-  return tip;
-};
-const nodeData = (data) => {
-  return Object.values(data);
-};
-const nodeClickListener = (evt) => {
-  console.log(evt.target.data().name); // eslint-disable-line no-console
-};
-const tableRow = (cells, tag = 'td') => {
-  const tr = document.createElement('tr');
-  cells.forEach((cell) => {
-    const td = document.createElement(tag);
-    td.appendChild(cell);
-    tr.appendChild(td);
-  });
-  return tr;
-};
-const hold = (node) => {
-  const id = node.data().id;
-  const holdBox = document.createElement('input');
-  holdBox.type = 'checkbox';
-  holdBox.id = `hold-${id}`;
-  holdBox.name = holdBox.id;
-  holdBox.checked = node.data().collected || false;
-  holdBox.onchange = (evt) => {
-    node.data().collected = evt.target.checked;
-    if (!evt.target.checked) {
-      node.select();
-      node.deselect();
-    }
-  };
-  return holdBox;
-};
-const nodeSelectChangeListener = (evt) => {
+/* event handlers */
+const nodeSelectChangeHandler = (evt) => {
   // selected node
-  console.log('evt.target', evt.target); // eslint-disable-line no-console
   const id = evt.target.data().id;
+  // get or make the tippy element for this node
   let nodeTippy = evt.target.data().tippy;
   if (!nodeTippy) {
-    nodeTippy = makeTippy(
-      evt.cy.getElementById(id),
-      nodeData(evt.target.data().go_terms)
-    );
+    nodeTippy = makeTippy(evt.cy.getElementById(id), tippyContent(evt.target.data()));
   }
   evt.target.data().tippy = nodeTippy;
+  // hide the tippy for each node
   evt.cy.nodes().forEach((node) => {
     const thisNodeTippy = node.data().tippy;
     if (thisNodeTippy && thisNodeTippy.hide) {
       node.data().tippy.hide();
     }
   });
-  nodeTippy.show();
-  // selection/collection table
-  const table = document.getElementById('selection');
-  [...table.children].forEach((child) => child.remove());
-  const selectedNodes = evt.cy.nodes().filter((node) => node.selected());
-  const collectedNodes = evt.cy.nodes().filter((node) => node.data().collected);
-  const displayedNodes = [...collectedNodes.add(selectedNodes)];
-  displayedNodes.forEach((node) => node.removeClass('collected'));
-  collectedNodes.forEach((node) => node.addClass('collected'));
-  const firstNode = displayedNodes[0];
-  if (!firstNode) return;
-  const keys = Object.keys(firstNode.data()).map((node) =>
-    document.createTextNode(node)
-  );
-  const headers = tableRow(keys, 'th');
-  table.appendChild(headers);
-  displayedNodes.forEach((node) => {
-    const nodeData = Object.values(node.data()).map((datum) =>
-      document.createTextNode(datum)
-    );
-    const nodeHold = hold(node);
-    const row = tableRow(nodeData.concat(nodeHold));
-    table.appendChild(row);
-  });
+  const options = {};
+  // if this node is being selected, display the tippy
+  const selected = evt.type === 'select';
+  evt.target.data().selected = selected;
+  if (selected) {
+    nodeTippy.show();
+    options.highlight = id;
+  }
+  // render the table to update selections
+  renderTable(evt.cy, options);
 };
-
+const nodeClickHandler = (evt) => {
+  console.log(evt.target.data().name); // eslint-disable-line no-console
+};
+/* metadata checks */
+const checkData = (metadata) => {
+  console.log('metadata', metadata); // eslint-disable-line no-console
+  if (metadata.nodes > 50) {
+    console.log('More than 50 nodes.'); // eslint-disable-line no-console
+    return false;
+  }
+  return true;
+};
+/* initial layout */
+const cytoscapeLayout = {
+  animate: false,
+  fit: true,
+  gravity: 1,
+  name: 'cose',
+  nodeDimensionsIncludeLabels: true,
+  nodeOverlap: 10000,
+  nodeRepulsion: (node) => {
+    return (node.degree() * 2048) ** 2;
+  },
+  padding: 100,
+};
+/* main screen turn on */
+const main = async () => {
+  const elementsResponse = await fetch('djornl.json');
+  const elementsJSON = await elementsResponse.json();
+  //cytoscape.use(cytoscapeSpread);
+  cytoscape.use(popper);
+  const cyDOM = document.getElementById('cy');
+  const cy = cytoscape({
+    container: cyDOM,
+    elements: annotateElements(elementsJSON),
+    layout: cytoscapeLayout,
+    maxZoom: 10,
+    minZoom: 1 / 10,
+    style: cytoscapeStyle,
+    zoom: 4,
+  });
+  // add event handlers
+  cy.nodes().on('click', nodeClickHandler);
+  cy.nodes().on('select', nodeSelectChangeHandler);
+  cy.nodes().on('unselect', nodeSelectChangeHandler);
+  /* debug */
+  window.cy = cy;
+  window.renderTable = renderTable;
+  console.log('cytoscape', cy); // eslint-disable-line no-console
+  /* add extra DOM */
+  // ul#legend
+  const legend = formatLegend(ColorClassAssigned, edgeNames);
+  cyDOM.parentElement.appendChild(legend);
+  // table#node-data
+  const table = document.createElement('table');
+  table.id = 'node-data';
+  document.body.appendChild(table);
+  renderTable(cy);
+};
 // initalize environment
 (async () => {
-  const elements_response = await fetch('djornl.json');
-  const elements_json = await elements_response.json();
-  cytoscape.use(cytoscapeSpread); // eslint-disable-line no-undef
-  const cy = cytoscape({
-    container: document.getElementById('cy'), // container to render in
-    elements: annotateElements(elements_json),
-    style: cytoscapeStyle,
-    layout: {
-      animate: false,
-      minDist: 100,
-      name: 'spread',
-      prelayout: {
-        animate: false,
-        name: 'cose',
-        gravity: 100,
-      },
-    },
-  });
-  // add listeners
-  cy.nodes().on('click', nodeClickListener);
-  cy.nodes().on('select', nodeSelectChangeListener);
-  cy.nodes().on('unselect', nodeSelectChangeListener);
-  console.log('cytoscape', cy); // eslint-disable-line no-console
-  // table
-  const table = document.createElement('table');
-  table.id = 'selection';
-  document.body.appendChild(table);
+  const elementsMetadataResponse = await fetch('djornl-metadata.json');
+  const elementsMetadata = await elementsMetadataResponse.json();
+  if (!checkData(elementsMetadata)) {
+    // eslint-disable-next-line no-console
+    console.log('Refusing to open large dataset. Run loadForce() to load.');
+    window.loadForce = main;
+    return;
+  }
+  main();
 })();
