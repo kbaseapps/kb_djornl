@@ -19,14 +19,13 @@ module.exports = {
         test: /\.js$/,
       },
       {
-        test: /.css$/,
+        test: /\.css$/,
         use: [
           {
             loader: 'style-loader',
           },
           {
             loader: 'css-loader',
-
             options: {
               sourceMap: true,
             },

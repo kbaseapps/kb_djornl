@@ -117,8 +117,8 @@ const main = async () => {
   console.log('cytoscape', cy); // eslint-disable-line no-console
   /* add extra DOM */
   // ul#legend
-  const legend = formatLegend(ColorClassAssigned, edgeNames);
-  cyDOM.parentElement.appendChild(legend);
+  const legend = document.getElementById('legend');
+  formatLegend(legend, ColorClassAssigned, edgeNames);
   // table#node-data
   const table = document.createElement('table');
   table.id = 'node-data';

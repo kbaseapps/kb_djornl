@@ -16,7 +16,6 @@
 
 div.kb-html-report {
   display: flex;
-  flex-direction: row;
   justify-content: space-around;
 }
 
@@ -33,23 +32,30 @@ ul._tippy {
   width: var(--app-width);
 }
 
+#extra {
+  display: flex;
+  flex-direction: column;
+  height: var(--app-height);
+  justify-content: flex-end;
+  max-width: 20em;
+}
+
+#footnotes {
+  font-size: .8em;
+  margin-left: 1em;
+  margin-right: 1em;
+}
+
 #legend {
-  height: var(app-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   list-style-type: none;
+  margin: 0px auto;
   overflow: hidden;
   padding: 1em;
   position: relative;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-#legend::after {
-  content: "Edge color indicates a line of evidence from a source above.";
-  display: block;
-  font-size: .8em;
-  margin: 1em auto;
 }
 
 #legend::before {

@@ -27,9 +27,8 @@ const formatGOTerms = (terms) => {
   });
   return ul;
 };
-export const formatLegend = (colorClasses, edgeTypeNames) => {
+export const formatLegend = (legend, colorClasses, edgeTypeNames) => {
   // legend
-  const legend = document.getElementById('legend');
   Object.entries(colorClasses)
     .map(([edgeType, colorClass]) => {
       const li = document.createElement('li');

@@ -1,3 +1,4 @@
+import './style.css';
 /* KBase colors and cytoscape style */
 const RAINIER_CHERRY_RED = '#d2232a';
 const SPRING_GREEN = '#c1cd23';
