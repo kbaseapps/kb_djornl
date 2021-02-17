@@ -29,17 +29,6 @@
                 "min_int" : 0,
                 "validate_as": "int"
             }
-        },
-        {
-            "id": "parameter_1",
-            "optional": true,
-            "advanced": false,
-            "allow_multiple": false,
-            "default_values": [ "" ],
-            "field_type": "text",
-            "text_options": {
-                "valid_ws_types": [ ]
-            }
         }
     ],
     "behavior": {
@@ -63,10 +52,6 @@
                 {
                     "input_parameter": "distance",
                     "target_property": "distance"
-                },
-                {
-                    "input_parameter": "parameter_1",
-                    "target_property": "parameter_1"
                 }
             ],
             "output_mapping": [

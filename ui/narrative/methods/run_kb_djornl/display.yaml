@@ -4,7 +4,9 @@
 name: DJORNL
 
 tooltip: |
-    Output table of clusters with GO enrichment
+    A visualization of a number of static coexpression networks representing
+        genes (nodes) and distinct lines of evidence (edges) facilitating the
+        rapid determination of the functional context of genes of interest.
 
 screenshots: []
 
@@ -24,14 +26,6 @@ parameters :
             Distance
         short-hint : |
             Include nodes up to this far away
-    parameter_1 :
-        ui-name : |
-            First parameter
-        short-hint : |
-            The first parameter
-        long-hint  : |
-            The first parameter that needs to be entered to drive the method.
-            This might be the first of many.
 
 description : |
     <p>This tool provides an interface to the KBase Arabidopsis datasets

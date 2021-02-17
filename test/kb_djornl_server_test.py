@@ -87,7 +87,6 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 # "gene_keys": "AT1G01100 AT1G18590", # 23 nodes, 52 egdes
                 # "gene_keys": "AT3G13175",  # 125 nodes, 478 edges
                 "distance": "1",
-                "parameter_1": param,
             },
         )
         ref = ret[0]["report_ref"]
