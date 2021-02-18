@@ -110,16 +110,18 @@ export const cytoscapeStyle = [
       'curve-style': 'bezier',
       'font-weight': 'bold',
       'line-color': 'data(bg)',
+      'source-endpoint': 'inside-to-node',
+      'target-endpoint': 'inside-to-node',
       'text-outline-color': 'data(bg)',
       'text-outline-width': '2px',
-      width: 3,
+      width: 'data(scoreScaled)',
       'z-index': 1,
     },
   },
   {
     selector: 'edge:selected',
     style: {
-      label: 'data(label)',
+      label: 'data(scoreRounded)',
     },
   },
 ];

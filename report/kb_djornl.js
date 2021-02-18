@@ -9,15 +9,21 @@ import { formatLegend, makeTippy, renderTable, tippyContent } from './app/dom.js
 import { cytoscapeStyle, edgeColorClass, edgeColors, edgeNames } from './app/style.js';
 /* element data */
 const ColorClassAssigned = {};
+const scaleScore = (score) => {
+  const scaled = Math.max(Math.round(-10 * Math.log10(1.1 - score)), 2);
+  return scaled;
+};
 const annotateEdge = (edge) => {
   const colorClass = edgeColorClass(edge.data.edgeType, ColorClassAssigned);
   const [colorBg, colorFg] = edgeColors(edge.data.edgeType);
   edge.data = {
     ...edge.data,
     bg: colorBg,
-    fg: colorFg,
     className: colorClass,
+    fg: colorFg,
     label: edgeNames[edge.data.edgeType],
+    scoreRounded: edge.data.score.toFixed(6),
+    scoreScaled: scaleScore(edge.data.score),
   };
   return edge;
 };

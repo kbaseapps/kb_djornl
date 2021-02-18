@@ -71,6 +71,7 @@ def run(config, report):  # pylint: disable=too-many-locals
         return dict(
             id=edge["_id"],
             edgeType=edge["edge_type"],
+            score=edge["score"],
             source=edge["_from"],
             target=edge["_to"],
             type="edge",
