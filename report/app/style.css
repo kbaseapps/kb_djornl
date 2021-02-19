@@ -14,9 +14,36 @@
   --app-width: 90vh;
 }
 
-div.kb-html-report {
+div.kb-html-report .flow-h {
   display: flex;
   justify-content: space-around;
+}
+
+span.message {
+  background-color: #fff;
+  border-radius: 8px;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  font-size: 1.5em;
+  padding: 8px;
+  width: 30em;
+}
+
+span.message.loading {
+  align-items: center;
+  flex-direction: row;
+  width: auto;
+}
+
+span.message i {
+  margin: 8px;
+}
+
+span.message button {
+  border-radius: 8px;
+  margin-top: 8px;
 }
 
 ul._tippy {
@@ -70,6 +97,23 @@ ul._tippy {
 
 #legend li {
   padding: 1em;
+}
+
+#messages {
+  align-items: center;
+  background-color:#88888888;
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  left: 0;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+}
+
+#messages.hidden {
+  display: none;
 }
 
 #node-data {
@@ -185,6 +229,10 @@ ul._tippy {
 
 #node-data .ui {
   padding: 0;
+}
+
+.blur {
+  filter: blur(5px);
 }
 
 .cyanobacteria_teal {

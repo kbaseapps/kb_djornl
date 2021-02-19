@@ -13,12 +13,6 @@ module.exports = {
   module: {
     rules: [
       {
-        exclude: /node_modules/,
-        include: [path.resolve(__dirname, 'report')],
-        loader: 'babel-loader',
-        test: /\.js$/,
-      },
-      {
         test: /\.css$/,
         use: [
           {
@@ -31,6 +25,12 @@ module.exports = {
             },
           },
         ],
+      },
+      {
+        exclude: /node_modules/,
+        include: [path.resolve(__dirname, 'report')],
+        loader: 'babel-loader',
+        test: /\.js$/,
       },
     ],
   },

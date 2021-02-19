@@ -5,7 +5,13 @@ import cytoscape from 'cytoscape';
 import popper from 'cytoscape-popper';
 
 // Local dependencies
-import { formatLegend, makeTippy, renderTable, tippyContent } from './app/dom.js';
+import {
+  formatLegend,
+  makeTippy,
+  promptUserForConfirmation,
+  renderTable,
+  tippyContent,
+} from './app/dom.js';
 import { cytoscapeStyle, edgeColorClass, edgeColors, edgeNames } from './app/style.js';
 /* element data */
 const ColorClassAssigned = {};
@@ -70,7 +76,8 @@ const nodeSelectChangeHandler = (evt) => {
     options.highlight = id;
   }
   // render the table to update selections
-  renderTable(evt.cy, options);
+  const table = document.getElementById('node-data');
+  renderTable(table, evt.cy, options);
 };
 const nodeClickHandler = (evt) => {
   console.log(evt.target.data().name); // eslint-disable-line no-console
@@ -98,8 +105,8 @@ const cytoscapeLayout = {
   padding: 100,
 };
 /* main screen turn on */
-const main = async () => {
-  const elementsResponse = await fetch('djornl.json');
+const main = async (data = 'default.json') => {
+  const elementsResponse = await fetch(data);
   const elementsJSON = await elementsResponse.json();
   //cytoscape.use(cytoscapeSpread);
   cytoscape.use(popper);
@@ -119,27 +126,39 @@ const main = async () => {
   cy.nodes().on('unselect', nodeSelectChangeHandler);
   /* debug */
   window.cy = cy;
-  window.renderTable = renderTable;
   console.log('cytoscape', cy); // eslint-disable-line no-console
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
   formatLegend(legend, ColorClassAssigned, edgeNames);
   // table#node-data
-  const table = document.createElement('table');
-  table.id = 'node-data';
-  document.body.appendChild(table);
-  renderTable(cy);
+  const table = document.getElementById('node-data');
+  renderTable(table, cy);
 };
 // initalize environment
 (async () => {
+  const messages = document.getElementById('messages');
+  const container = document.querySelectorAll('.kb-html-report')[0];
   const elementsMetadataResponse = await fetch('djornl-metadata.json');
   const elementsMetadata = await elementsMetadataResponse.json();
+  const loadMain = () => main('djornl.json');
   if (!checkData(elementsMetadata)) {
-    // eslint-disable-next-line no-console
-    console.log('Refusing to open large dataset. Run loadForce() to load.');
-    window.loadForce = main;
+    const { nodes, edges } = elementsMetadata;
+    const message = document.createTextNode(
+      [
+        'Refusing to load large dataset automatically.',
+        `This graph contains ${nodes} nodes and ${edges} edges.`,
+        'Click the button to load anyway.',
+      ].join(' ')
+    );
+    const ackButton = document.createElement('button');
+    ackButton.appendChild(document.createTextNode('OK'));
+    const messageContainer = document.createElement('span');
+    messageContainer.classList.add('message');
+    messageContainer.appendChild(message);
+    messageContainer.appendChild(ackButton);
+    promptUserForConfirmation({ container, messages }, messageContainer, loadMain);
     return;
   }
-  main();
+  loadMain();
 })();

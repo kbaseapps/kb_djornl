@@ -83,10 +83,16 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             self.ctx,
             {
                 "workspace_name": self.wsName,
-                "gene_keys": "ATCG00280",  # 7 nodes, 19 edges
-                # "gene_keys": "AT1G01100 AT1G18590", # 23 nodes, 52 egdes
-                # "gene_keys": "AT3G13175",  # 125 nodes, 478 edges
-                "distance": "1",
+                # "distance": "1", "gene_keys": "ATCG00280",  # 7 nodes, 19 edges
+                "distance": "2",
+                "gene_keys": "ATCG00280",  # 49 nodes, 135 edges
+                # 23 nodes, 52 egdes
+                # "distance": "1", "gene_keys": "AT1G01100 AT1G18590",
+                # 1599 nodes, 25135 edges
+                # "distance": "2", "gene_keys": "AT1G01100 AT1G18590",
+                # "distance": "1", "gene_keys": "AT3G13175",  # 125 nodes, 478 edges
+                # "distance": "1", "gene_keys": "AT1G17280",  # 464 nodes, 2776 edges
+                # "distance": "2", "gene_keys": "AT3G13175",  # 1500 nodes, 23729 edges
             },
         )
         ref = ret[0]["report_ref"]

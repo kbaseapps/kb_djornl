@@ -63,6 +63,38 @@ export const makeTippy = function (ele, fragment) {
   });
   return tip;
 };
+// prompt user for confirmation
+export const promptUserForConfirmation = (doms, message, callback) => {
+  const { container, messages } = doms;
+  const updateMessage = (content, options) => {
+    [...messages.childNodes].forEach((childNode) => childNode.remove());
+    messages.appendChild(content);
+    if (options) {
+      const { handler, selector } = options;
+      const handle = messages.querySelector(selector);
+      handle.addEventListener('click', handler);
+    }
+  };
+  messages.classList.toggle('hidden');
+  container.classList.toggle('blur');
+  const ackHandler = async () => {
+    const content = document.createTextNode('Loading...');
+    const loadingIcon = document.createElement('i');
+    loadingIcon.classList.add('fa');
+    loadingIcon.classList.add('fa-refresh');
+    loadingIcon.classList.add('fa-spin');
+    const messageContainer = document.createElement('span');
+    messageContainer.classList.add('loading');
+    messageContainer.classList.add('message');
+    messageContainer.appendChild(content);
+    messageContainer.appendChild(loadingIcon);
+    updateMessage(messageContainer);
+    await callback();
+    container.classList.toggle('blur');
+    messages.classList.toggle('hidden');
+  };
+  updateMessage(message, { selector: 'button', handler: ackHandler });
+};
 const textToLI = (text) => {
   const li = document.createElement('li');
   li.appendChild(document.createTextNode(text));
@@ -159,11 +191,10 @@ const tableDataFormat = {
   GOTerms: (terms) => formatGOTerms(terms),
   mapman: ({ bin, desc, name }) => formatMapman({ bin, desc, name }),
 };
-export const renderTable = (cy, options) => {
+export const renderTable = (table, cy, options) => {
   // node-data selection/collection table
   const { highlight, sort } = options || {};
-  const table = document.getElementById('node-data');
-  [...table.children].forEach((child) => child.remove());
+  [...table.childNodes].forEach((childNode) => childNode.remove());
   const selectedNodes = cy.nodes().filter((node) => node.selected());
   const collectedNodes = cy.nodes().filter((node) => node.data().collected);
   const displayedNodes = [...collectedNodes.add(selectedNodes)];
@@ -242,7 +273,7 @@ export const renderTable = (cy, options) => {
         sortReverse = -sortReverse;
         sortNew = sortReverse === 1 ? sortOn : `-${sortOn}`;
       }
-      renderTable(cy, { sort: sortNew });
+      renderTable(table, cy, { sort: sortNew });
     };
     return span;
   });

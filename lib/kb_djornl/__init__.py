@@ -8,8 +8,6 @@ import uuid
 
 import yaml
 
-from jinja2 import Environment, PackageLoader
-
 from relation_engine_client import REClient
 
 DATA_ROOT = "/opt/work/exascale_data/"
@@ -92,16 +90,6 @@ def run(config, report):  # pylint: disable=too-many-locals
     cytoscape_metadata_path = os.path.join(reports_path, "djornl-metadata.json")
     with open(cytoscape_metadata_path, "w") as cytoscape_metadata_json:
         cytoscape_metadata_json.write(json.dumps(cytoscape_metadata))
-
-    title_genes = params.get("gene_keys", "")
-    report_title = f"Arabidopsis thaliana genes: {title_genes}"
-    env = Environment(loader=PackageLoader("kb_djornl", "templates"))
-    template = env.get_template("index.html")
-    ctx = template.new_context(vars=dict(content="", title=report_title))
-    out = template.render(ctx)
-
-    with open(os.path.join(reports_path, "index.html"), "w") as report_file:
-        report_file.write(out)
 
     html_links = [
         {
