@@ -17,6 +17,16 @@ elif [ "${1}" = "async" ] ; then
   sh ./scripts/run_async.sh
 elif [ "${1}" = "init" ] ; then
   echo "Initialize module"
+  set -x
+  set -e
+  mkdir -p /data/RWRtools
+  curl -H "Authorization: OAuth $KB_AUTH_TOKEN " \
+    -o /data/RWRtools/RWRtools.tar.gz \
+    https://ci.kbase.us/services/shock-api/node/8fc40e8e-410e-452d-98f8-5519e9d879f2?download_raw
+  cd /data/RWRtools
+  tar xzvf RWRtools.tar.gz
+  bash /kb/module/scripts/install-rwrtools.sh
+  touch /data/__READY__
 elif [ "${1}" = "bash" ] ; then
   bash
 elif [ "${1}" = "report" ] ; then
