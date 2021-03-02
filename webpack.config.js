@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -8,7 +9,13 @@ module.exports = {
     path: path.resolve(__dirname, 'test_local/workdir/tmp/reports'),
   },
 
-  plugins: [new webpack.ProgressPlugin()],
+  plugins: [
+    new webpack.ProgressPlugin(),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: './report/index.html',
+    }),
+  ],
 
   module: {
     rules: [
