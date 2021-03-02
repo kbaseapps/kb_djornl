@@ -53,7 +53,6 @@ def run(config, report):  # pylint: disable=too-many-locals
     def cytoscape_node(node):
         return dict(
             id=node["_id"],
-            type="node",
             geneSymbol=node.get("gene_symbol", ""),
             GOTerms=node.get("go_terms", []),
             mapmanBin=node.get("mapman_bin", ""),
@@ -72,13 +71,15 @@ def run(config, report):  # pylint: disable=too-many-locals
             score=edge["score"],
             source=edge["_from"],
             target=edge["_to"],
-            type="edge",
         )
 
     # graph data
     cytoscape_nodes = [dict(data=cytoscape_node(node)) for node in nodes]
     cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
-    cytoscape_data = cytoscape_nodes + cytoscape_edges
+    cytoscape_data = dict(
+        nodes=cytoscape_nodes,
+        edges=cytoscape_edges,
+    )
     cytoscape_path = os.path.join(reports_path, "djornl.json")
     with open(cytoscape_path, "w") as cytoscape_json:
         cytoscape_json.write(json.dumps(cytoscape_data))

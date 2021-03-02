@@ -1,8 +1,59 @@
 import tippy, { sticky } from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 
-/* markup formatting including tippy */
-const formatMapman = ({ bin, desc, name }) => {
+/* components */
+/* In this module, the signature of a component is
+    component({...}) => dom node
+   which deliberately mimics React functional components.
+*/
+const componentCheckboxCollect = ({ node }) => {
+  const id = node.data().id;
+  const collectBox = document.createElement('input');
+  collectBox.type = 'checkbox';
+  collectBox.id = `collect-${id}`;
+  collectBox.name = collectBox.id;
+  collectBox.checked = node.data().collected || false;
+  collectBox.onchange = (evt) => {
+    const checked = evt.target.checked;
+    node.data().collected = checked;
+    if (checked) {
+      node.addClass('collected');
+      return;
+    }
+    node.removeClass('collected');
+  };
+  const collectLabel = document.createElement('label');
+  collectLabel.setAttribute('for', collectBox.name);
+  const collectDiv = document.createElement('div');
+  collectDiv.appendChild(collectBox);
+  collectDiv.appendChild(collectLabel);
+  return collectDiv;
+};
+const componentCheckboxSelect = ({ node }) => {
+  const id = node.data().id;
+  const selectBox = document.createElement('input');
+  selectBox.type = 'checkbox';
+  selectBox.id = `select-${id}`;
+  selectBox.name = selectBox.id;
+  selectBox.checked = node.selected();
+  selectBox.onchange = (evt) => {
+    const checked = evt.target.checked;
+    node.data().selected = checked;
+    if (!checked) {
+      node.deselect();
+    }
+    if (checked) {
+      node.select();
+    }
+  };
+  const selectLabel = document.createElement('label');
+  selectLabel.setAttribute('for', selectBox.name);
+  const selectDiv = document.createElement('div');
+  selectDiv.appendChild(selectBox);
+  selectDiv.appendChild(selectLabel);
+  return selectDiv;
+};
+const componentCellMapman = ({ bin, desc, name }) => {
   // wbr indicates a possible word break, allowing Mapman names to wrap.
   const wbr = () => document.createElement('wbr');
   const div = document.createElement('div');
@@ -18,7 +69,7 @@ const formatMapman = ({ bin, desc, name }) => {
   elements.forEach((elt) => div.appendChild(elt));
   return div;
 };
-const formatGOTerms = (terms) => {
+const componentCellGOTerms = ({ terms }) => {
   const ul = document.createElement('ul');
   terms.forEach((term) => {
     const ili = document.createElement('li');
@@ -27,21 +78,67 @@ const formatGOTerms = (terms) => {
   });
   return ul;
 };
-export const formatLegend = (legend, colorClasses, edgeTypeNames) => {
-  // legend
-  Object.entries(colorClasses)
-    .map(([edgeType, colorClass]) => {
-      const li = document.createElement('li');
-      const edgeTypeName = edgeTypeNames[edgeType];
-      const color = document.createTextNode(edgeTypeName);
-      li.append(color);
-      li.classList.add(colorClass.slice(1));
-      return li;
-    })
-    .forEach((item) => legend.appendChild(item));
-  return legend;
+const componentMessage = ({ content }) => {
+  const contentNode = document.createTextNode(content);
+  const loadingIcon = document.createElement('i');
+  loadingIcon.classList.add('fa');
+  loadingIcon.classList.add('fa-refresh');
+  loadingIcon.classList.add('fa-spin');
+  const messageContainer = document.createElement('span');
+  messageContainer.appendChild(contentNode);
+  messageContainer.appendChild(loadingIcon);
+  messageContainer.classList.add('loading');
+  messageContainer.classList.add('message');
+  return messageContainer;
 };
-export const makeTippy = function (ele, fragment) {
+const componentTableRow = ({ cells, tag }) => {
+  let tagName = 'td';
+  if (tag) tagName = tag;
+  const tr = document.createElement('tr');
+  cells.forEach((cell) => {
+    const td = document.createElement(tagName);
+    td.appendChild(cell);
+    tr.appendChild(td);
+  });
+  return tr;
+};
+const componentTextItem = ({ text }) => {
+  const li = document.createElement('li');
+  li.appendChild(document.createTextNode(text));
+  return li;
+};
+const componentTippyGeneSymbol = ({ geneSymbol }) => {
+  if (!geneSymbol) return;
+  return componentTextItem({ text: `Gene Symbol: ${geneSymbol}` });
+};
+const componentTippyGOTerms = ({ terms }) => {
+  if (!terms.length) return;
+  const li = componentTextItem({ text: 'GO Terms: ' });
+  li.appendChild(componentCellGOTerms({ terms }));
+  return li;
+};
+const componentTippyMapman = ({ bin, desc, name }) => {
+  if (!bin) return;
+  const li = componentTextItem({ text: 'Mapman: ' });
+  const abbr = document.createElement('abbr');
+  abbr.appendChild(document.createTextNode(bin));
+  abbr.title = name + (desc ? `: ${desc}` : '');
+  li.appendChild(abbr);
+  return li;
+};
+export const componentTippy = ({ data }) => {
+  const ul = document.createElement('ul');
+  ul.classList.add('_tippy');
+  const tippyItems = [
+    componentTippyGeneSymbol({ geneSymbol: data.geneSymbol }),
+    componentTippyGOTerms({ terms: data.GOTerms }),
+    componentTippyMapman(data.mapman),
+  ].filter((item) => item);
+  tippyItems.forEach((item) => ul.appendChild(item));
+  return ul;
+};
+/* ui cells */
+export const makeTippy = (ele, fragment) => {
   const ref = ele.popperRef();
   const dummyDomEle = document.createElement('div');
   const tip = tippy(dummyDomEle, {
@@ -78,16 +175,7 @@ export const promptUserForConfirmation = (doms, message, callback) => {
   messages.classList.toggle('hidden');
   container.classList.toggle('blur');
   const ackHandler = async () => {
-    const content = document.createTextNode('Loading...');
-    const loadingIcon = document.createElement('i');
-    loadingIcon.classList.add('fa');
-    loadingIcon.classList.add('fa-refresh');
-    loadingIcon.classList.add('fa-spin');
-    const messageContainer = document.createElement('span');
-    messageContainer.classList.add('loading');
-    messageContainer.classList.add('message');
-    messageContainer.appendChild(content);
-    messageContainer.appendChild(loadingIcon);
+    const messageContainer = componentMessage({ content: 'Loading...' });
     updateMessage(messageContainer);
     await callback();
     container.classList.toggle('blur');
@@ -95,105 +183,23 @@ export const promptUserForConfirmation = (doms, message, callback) => {
   };
   updateMessage(message, { selector: 'button', handler: ackHandler });
 };
-const textToLI = (text) => {
-  const li = document.createElement('li');
-  li.appendChild(document.createTextNode(text));
-  return li;
+export const renderLegend = ({ legend, colorClasses, edgeNames }) => {
+  // legend
+  Object.entries(colorClasses)
+    .map(([edgeType, colorClass]) => {
+      const li = document.createElement('li');
+      const edgeTypeName = edgeNames[edgeType];
+      const color = document.createTextNode(edgeTypeName);
+      li.append(color);
+      li.classList.add(colorClass.slice(1));
+      return li;
+    })
+    .forEach((item) => legend.appendChild(item));
+  return legend;
 };
-const tippyFormatGeneSymbol = (geneSymbol) => {
-  if (!geneSymbol) return;
-  return textToLI(`Gene Symbol: ${geneSymbol}`);
-};
-const tippyFormatGOTerms = (terms) => {
-  if (!terms.length) return;
-  const li = document.createElement('li');
-  li.appendChild(document.createTextNode('GO Terms: '));
-  const ul = formatGOTerms(terms);
-  li.appendChild(ul);
-  return li;
-};
-const tippyFormatMapman = ({ bin, desc, name }) => {
-  if (!bin) return;
-  const li = textToLI('Mapman: ');
-  const abbr = document.createElement('abbr');
-  abbr.appendChild(document.createTextNode(bin));
-  abbr.title = name + (desc ? `: ${desc}` : '');
-  li.appendChild(abbr);
-  return li;
-};
-export const tippyContent = (data) => {
-  const ul = document.createElement('ul');
-  ul.classList.add('_tippy');
-  const tippyItems = [
-    tippyFormatGeneSymbol(data.geneSymbol),
-    tippyFormatGOTerms(data.GOTerms),
-    tippyFormatMapman(data.mapman),
-  ].filter((item) => item);
-  tippyItems.forEach((item) => ul.appendChild(item));
-  return ul;
-};
-const tableRow = (cells, tag = 'td') => {
-  const tr = document.createElement('tr');
-  cells.forEach((cell) => {
-    const td = document.createElement(tag);
-    td.appendChild(cell);
-    tr.appendChild(td);
-  });
-  return tr;
-};
-/* ui cells */
-const nodesSelectCollect = (node) => {
-  const id = node.data().id;
-  const checkbox = document.createElement('input');
-  const label = document.createElement('label');
-  const div = document.createElement('div');
-  checkbox.type = 'checkbox';
-  const collectBox = checkbox.cloneNode();
-  collectBox.id = `collect-${id}`;
-  collectBox.name = collectBox.id;
-  collectBox.checked = node.data().collected || false;
-  collectBox.onchange = (evt) => {
-    const checked = evt.target.checked;
-    node.data().collected = checked;
-    if (checked) {
-      node.addClass('collected');
-      return;
-    }
-    node.removeClass('collected');
-  };
-  const collectLabel = label.cloneNode();
-  collectLabel.setAttribute('for', collectBox.name);
-  const collectDiv = div.cloneNode();
-  collectDiv.appendChild(collectBox);
-  collectDiv.appendChild(collectLabel);
-  const selectBox = checkbox.cloneNode();
-  selectBox.id = `select-${id}`;
-  selectBox.name = selectBox.id;
-  selectBox.checked = node.selected();
-  selectBox.onchange = (evt) => {
-    const checked = evt.target.checked;
-    node.data().selected = checked;
-    if (!checked) {
-      node.deselect();
-    }
-    if (checked) {
-      node.select();
-    }
-  };
-  const selectLabel = label.cloneNode();
-  selectLabel.setAttribute('for', selectBox.name);
-  const selectDiv = div.cloneNode();
-  selectDiv.appendChild(selectBox);
-  selectDiv.appendChild(selectLabel);
-  return [selectDiv, collectDiv];
-};
-const tableDataFormat = {
-  GOTerms: (terms) => formatGOTerms(terms),
-  mapman: ({ bin, desc, name }) => formatMapman({ bin, desc, name }),
-};
-export const renderTable = (table, cy, options) => {
+export const renderTable = ({ table, cytoscapeInstance, highlight, sort }) => {
   // node-data selection/collection table
-  const { highlight, sort } = options || {};
+  const cy = cytoscapeInstance;
   [...table.childNodes].forEach((childNode) => childNode.remove());
   const selectedNodes = cy.nodes().filter((node) => node.selected());
   const collectedNodes = cy.nodes().filter((node) => node.data().collected);
@@ -273,13 +279,17 @@ export const renderTable = (table, cy, options) => {
         sortReverse = -sortReverse;
         sortNew = sortReverse === 1 ? sortOn : `-${sortOn}`;
       }
-      renderTable(table, cy, { sort: sortNew });
+      renderTable({ table, cytoscapeInstance: cy, sort: sortNew });
     };
     return span;
   });
-  const headers = tableRow(columnsTitles, 'th');
+  const headers = componentTableRow({ cells: columnsTitles, tag: 'th' });
   table.appendChild(headers);
   // node data rows
+  const tableDataFormat = {
+    GOTerms: (terms) => componentCellGOTerms({ terms }),
+    mapman: ({ bin, desc, name }) => componentCellMapman({ bin, desc, name }),
+  };
   const sortedNodes = cy.nodes().sort(sortFn);
   sortedNodes.forEach((node) => {
     const nodeData = columnsDisplayed
@@ -291,8 +301,11 @@ export const renderTable = (table, cy, options) => {
         }
         return document.createTextNode(datum);
       });
-    const nodesInterface = nodesSelectCollect(node);
-    const row = tableRow(nodeData);
+    const row = componentTableRow({ cells: nodeData });
+    const nodesInterface = [
+      componentCheckboxCollect({ node }),
+      componentCheckboxSelect({ node }),
+    ];
     nodesInterface.forEach((elt) => {
       const td = document.createElement('td');
       td.classList.add('ui');
@@ -310,4 +323,5 @@ export const renderTable = (table, cy, options) => {
     };
     table.appendChild(row);
   });
+  return table;
 };

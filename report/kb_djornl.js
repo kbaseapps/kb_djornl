@@ -6,11 +6,11 @@ import popper from 'cytoscape-popper';
 
 // Local dependencies
 import {
-  formatLegend,
+  componentTippy,
   makeTippy,
   promptUserForConfirmation,
+  renderLegend,
   renderTable,
-  tippyContent,
 } from './app/dom.js';
 import { cytoscapeStyle, edgeColorClass, edgeColors, edgeNames } from './app/style.js';
 /* element data */
@@ -43,12 +43,6 @@ const annotateNode = (node) => {
   };
   return node;
 };
-const annotations = {
-  node: annotateNode,
-  edge: annotateEdge,
-};
-const annotateElements = (elements) =>
-  elements.map((element) => annotations[element.data.type](element));
 
 /* event handlers */
 const nodeSelectChangeHandler = (evt) => {
@@ -57,7 +51,10 @@ const nodeSelectChangeHandler = (evt) => {
   // get or make the tippy element for this node
   let nodeTippy = evt.target.data().tippy;
   if (!nodeTippy) {
-    nodeTippy = makeTippy(evt.cy.getElementById(id), tippyContent(evt.target.data()));
+    nodeTippy = makeTippy(
+      evt.cy.getElementById(id),
+      componentTippy({ data: evt.target.data() })
+    );
   }
   evt.target.data().tippy = nodeTippy;
   // hide the tippy for each node
@@ -67,17 +64,17 @@ const nodeSelectChangeHandler = (evt) => {
       node.data().tippy.hide();
     }
   });
-  const options = {};
   // if this node is being selected, display the tippy
   const selected = evt.type === 'select';
   evt.target.data().selected = selected;
+  let highlight;
   if (selected) {
     nodeTippy.show();
-    options.highlight = id;
+    highlight = id;
   }
   // render the table to update selections
   const table = document.getElementById('node-data');
-  renderTable(table, evt.cy, options);
+  renderTable({ table, cytoscapeInstance: evt.cy, highlight });
 };
 const nodeClickHandler = (evt) => {
   console.log(evt.target.data().name); // eslint-disable-line no-console
@@ -107,13 +104,15 @@ const cytoscapeLayout = {
 /* main screen turn on */
 const main = async (data = 'default.json') => {
   const elementsResponse = await fetch(data);
-  const elementsJSON = await elementsResponse.json();
+  const { nodes, edges } = await elementsResponse.json();
   //cytoscape.use(cytoscapeSpread);
+  const nodesCytoscape = nodes.map((node) => annotateNode(node));
+  const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
   cytoscape.use(popper);
   const cyDOM = document.getElementById('cy');
   const cy = cytoscape({
     container: cyDOM,
-    elements: annotateElements(elementsJSON),
+    elements: nodesCytoscape.concat(edgesCytoscape),
     layout: cytoscapeLayout,
     maxZoom: 10,
     minZoom: 1 / 10,
@@ -130,10 +129,10 @@ const main = async (data = 'default.json') => {
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
-  formatLegend(legend, ColorClassAssigned, edgeNames);
+  renderLegend({ edgeNames, legend, colorClasses: ColorClassAssigned });
   // table#node-data
   const table = document.getElementById('node-data');
-  renderTable(table, cy);
+  renderTable({ table, cytoscapeInstance: cy });
 };
 // initalize environment
 (async () => {
