@@ -183,14 +183,34 @@ export const promptUserForConfirmation = (doms, message, callback) => {
   };
   updateMessage(message, { selector: 'button', handler: ackHandler });
 };
-export const renderLegend = ({ legend, colorClasses, edgeNames }) => {
+export const renderLegend = ({
+  legend,
+  cytoscapeInstance,
+  colorClasses,
+  edgeNames,
+}) => {
+  const edgeTypeToggleVisibility = (edgeType) => () => {
+    cytoscapeInstance
+      .edges()
+      .filter((edge) => edge.data().edgeType === edgeType)
+      .forEach((edge) => edge.toggleClass('hidden'));
+  };
   // legend
   Object.entries(colorClasses)
     .map(([edgeType, colorClass]) => {
       const li = document.createElement('li');
       const edgeTypeName = edgeNames[edgeType];
-      const color = document.createTextNode(edgeTypeName);
-      li.append(color);
+      const checkbox = document.createElement('input');
+      checkbox.addEventListener('change', edgeTypeToggleVisibility(edgeType));
+      checkbox.type = 'checkbox';
+      const checkboxName = `${edgeTypeName.split(' ')[0]}-visibility`;
+      checkbox.id = checkboxName;
+      checkbox.name = checkboxName;
+      li.append(checkbox);
+      const label = document.createElement('label');
+      label.append(document.createTextNode(edgeTypeName));
+      label.setAttribute('for', checkbox.name);
+      li.append(label);
       li.classList.add(colorClass.slice(1));
       return li;
     })

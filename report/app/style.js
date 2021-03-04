@@ -124,6 +124,12 @@ export const cytoscapeStyle = [
       label: 'data(scoreRounded)',
     },
   },
+  {
+    selector: 'edge.hidden',
+    style: {
+      display: 'none',
+    },
+  },
 ];
 export const edgeNames = {
   'phenotype-association_AraGWAS_subnet_permsig_geni': 'AraGWAS subnet',

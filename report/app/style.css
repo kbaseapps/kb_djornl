@@ -82,7 +82,7 @@ ul._tippy {
   overflow: hidden;
   padding: 1em;
   position: relative;
-  text-align: center;
+  text-align: right;
 }
 
 #legend::before {
@@ -95,8 +95,25 @@ ul._tippy {
   width: 100%;
 }
 
-#legend li {
+#legend label {
+  margin-bottom: 0;
   padding: 1em;
+  width: 100%;
+}
+
+#legend input[type=checkbox] {
+  display: none;
+}
+
+#legend input[type=checkbox] + label::after {
+  content: "\f06e";
+  font-family: FontAwesome;
+  margin-left: 1em;
+}
+
+#legend input[type=checkbox]:checked + label::after {
+  content: "show";
+  content: "\f070";
 }
 
 #messages {

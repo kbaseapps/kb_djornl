@@ -129,7 +129,12 @@ const main = async (data = 'default.json') => {
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
-  renderLegend({ edgeNames, legend, colorClasses: ColorClassAssigned });
+  renderLegend({
+    edgeNames,
+    legend,
+    colorClasses: ColorClassAssigned,
+    cytoscapeInstance: cy,
+  });
   // table#node-data
   const table = document.getElementById('node-data');
   renderTable({ table, cytoscapeInstance: cy });
