@@ -68,36 +68,27 @@ ul._tippy {
 }
 
 #footnotes {
+  display: block;
   font-size: .8em;
-  margin-left: 1em;
-  margin-right: 1em;
+  padding-left: 1em;
+  padding-right: 1em;
 }
 
 #legend {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   list-style-type: none;
   margin: 0px auto;
-  overflow: hidden;
   padding: 1em;
-  position: relative;
-  text-align: right;
 }
 
 #legend::before {
   content: "Legend";
+  display: block;
   font-size: 150%;
   font-weight: bold;
-  left: 0px;
-  margin-bottom: 1em;
+  padding-bottom: .5em;
   text-align: center;
-  width: 100%;
-}
-
-#legend label {
-  margin-bottom: 0;
-  padding: 1em;
   width: 100%;
 }
 
@@ -105,15 +96,31 @@ ul._tippy {
   display: none;
 }
 
-#legend input[type=checkbox] + label::after {
+#legend input.visibility[type=checkbox] + label::after {
+  background: #fff;
+  border-radius: .5em;
+  color: #000;
   content: "\f06e";
   font-family: FontAwesome;
-  margin-left: 1em;
+  padding: .25em;
 }
 
-#legend input[type=checkbox]:checked + label::after {
-  content: "show";
+#legend input[type=checkbox].visibility:checked + label::after {
   content: "\f070";
+}
+
+#legend label {
+  margin-bottom: 0;
+  padding: 1em;
+}
+
+#legend label:first-child {
+  margin: 0px auto;
+}
+
+#legend li {
+  display: flex;
+  justify-content: space-between;
 }
 
 #messages {

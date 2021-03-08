@@ -91,6 +91,69 @@ const componentMessage = ({ content }) => {
   messageContainer.classList.add('message');
   return messageContainer;
 };
+const componentNetworkTippy = ({ edgeTypeMeta }) => {
+  const contentTippy = document.createElement('span');
+  const citation = document.createTextNode(`${edgeTypeMeta.title} [`);
+  const link = document.createElement('a');
+  link.href = edgeTypeMeta.cite;
+  link.appendChild(document.createTextNode('citation'));
+  contentTippy.appendChild(citation);
+  contentTippy.appendChild(link);
+  contentTippy.appendChild(document.createTextNode(']'));
+  return contentTippy;
+};
+const componentNetworkVisibilityToggle = ({
+  edgeType,
+  edgeTypeName,
+  toggleVisibility,
+}) => {
+  const checkboxVisibility = document.createElement('input');
+  checkboxVisibility.type = 'checkbox';
+  checkboxVisibility.addEventListener('change', toggleVisibility(edgeType));
+  const slug = edgeTypeName.split(' ')[0];
+  const checkboxVisibilityName = `${slug}-visibility`;
+  checkboxVisibility.id = checkboxVisibilityName;
+  checkboxVisibility.name = checkboxVisibilityName;
+  checkboxVisibility.classList.add('visibility');
+  return checkboxVisibility;
+};
+const componentNetworkZone = ({
+  colorClass,
+  edgeMetadata,
+  edgeType,
+  edgeTypeToggleVisibility,
+}) => {
+  const edgeTypeMeta = edgeMetadata[edgeType];
+  const edgeTypeName = edgeTypeMeta.name;
+  const label = document.createElement('label');
+  const li = document.createElement('li');
+  const span = document.createElement('span');
+  // friendly edge name
+  const labelCite = label.cloneNode();
+  labelCite.append(document.createTextNode(edgeTypeName));
+  li.append(labelCite);
+  // colors
+  li.classList.add(colorClass.slice(1));
+  // toggle network visibility
+  const checkboxVisibility = componentNetworkVisibilityToggle({
+    edgeType,
+    edgeTypeName,
+    toggleVisibility: edgeTypeToggleVisibility,
+  });
+  li.append(checkboxVisibility);
+  const labelVisibility = label.cloneNode();
+  labelVisibility.setAttribute('for', checkboxVisibility.name);
+  li.append(labelVisibility);
+  // citation tippy
+  const contentTippy = componentNetworkTippy({ edgeTypeMeta });
+  tippy(li, {
+    content: contentTippy,
+    interactive: true,
+    placement: 'left',
+  });
+  span.appendChild(li);
+  return span;
+};
 const componentTableRow = ({ cells, tag }) => {
   let tagName = 'td';
   if (tag) tagName = tag;
@@ -187,8 +250,9 @@ export const renderLegend = ({
   legend,
   cytoscapeInstance,
   colorClasses,
-  edgeNames,
+  edgeMetadata,
 }) => {
+  [...legend.childNodes].forEach((childNode) => childNode.remove());
   const edgeTypeToggleVisibility = (edgeType) => () => {
     cytoscapeInstance
       .edges()
@@ -197,23 +261,14 @@ export const renderLegend = ({
   };
   // legend
   Object.entries(colorClasses)
-    .map(([edgeType, colorClass]) => {
-      const li = document.createElement('li');
-      const edgeTypeName = edgeNames[edgeType];
-      const checkbox = document.createElement('input');
-      checkbox.addEventListener('change', edgeTypeToggleVisibility(edgeType));
-      checkbox.type = 'checkbox';
-      const checkboxName = `${edgeTypeName.split(' ')[0]}-visibility`;
-      checkbox.id = checkboxName;
-      checkbox.name = checkboxName;
-      li.append(checkbox);
-      const label = document.createElement('label');
-      label.append(document.createTextNode(edgeTypeName));
-      label.setAttribute('for', checkbox.name);
-      li.append(label);
-      li.classList.add(colorClass.slice(1));
-      return li;
-    })
+    .map(([edgeType, colorClass]) =>
+      componentNetworkZone({
+        colorClass,
+        edgeMetadata,
+        edgeType,
+        edgeTypeToggleVisibility,
+      })
+    )
     .forEach((item) => legend.appendChild(item));
   return legend;
 };
@@ -323,8 +378,8 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, sort }) => {
       });
     const row = componentTableRow({ cells: nodeData });
     const nodesInterface = [
-      componentCheckboxCollect({ node }),
       componentCheckboxSelect({ node }),
+      componentCheckboxCollect({ node }),
     ];
     nodesInterface.forEach((elt) => {
       const td = document.createElement('td');

@@ -12,7 +12,13 @@ import {
   renderLegend,
   renderTable,
 } from './app/dom.js';
-import { cytoscapeStyle, edgeColorClass, edgeColors, edgeNames } from './app/style.js';
+import {
+  cytoscapeStyle,
+  edgeColorClass,
+  edgeColors,
+  edgeMetadata,
+} from './app/style.js';
+
 /* element data */
 const ColorClassAssigned = {};
 const scaleScore = (score) => {
@@ -27,7 +33,7 @@ const annotateEdge = (edge) => {
     bg: colorBg,
     className: colorClass,
     fg: colorFg,
-    label: edgeNames[edge.data.edgeType],
+    label: edgeMetadata[edge.data.edgeType].name,
     scoreRounded: edge.data.score.toFixed(6),
     scoreScaled: scaleScore(edge.data.score),
   };
@@ -102,18 +108,23 @@ const cytoscapeLayout = {
   padding: 100,
 };
 /* main screen turn on */
-const main = async (data = 'default.json') => {
-  const elementsResponse = await fetch(data);
-  const { nodes, edges } = await elementsResponse.json();
+const main = ({ nodes, edges, loaded }) => {
   //cytoscape.use(cytoscapeSpread);
   const nodesCytoscape = nodes.map((node) => annotateNode(node));
   const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
-  cytoscape.use(popper);
+  let useLayout = cytoscapeLayout;
+  if (loaded) {
+    // set these values on subsequent loads
+    useLayout = { name: 'preset' };
+  } else {
+    // load popper on first load
+    cytoscape.use(popper);
+  }
   const cyDOM = document.getElementById('cy');
   const cy = cytoscape({
     container: cyDOM,
-    elements: nodesCytoscape.concat(edgesCytoscape),
-    layout: cytoscapeLayout,
+    elements: { nodes: nodesCytoscape, edges: edgesCytoscape },
+    layout: useLayout,
     maxZoom: 10,
     minZoom: 1 / 10,
     style: cytoscapeStyle,
@@ -124,13 +135,12 @@ const main = async (data = 'default.json') => {
   cy.nodes().on('select', nodeSelectChangeHandler);
   cy.nodes().on('unselect', nodeSelectChangeHandler);
   /* debug */
-  window.cy = cy;
   console.log('cytoscape', cy); // eslint-disable-line no-console
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
   renderLegend({
-    edgeNames,
+    edgeMetadata,
     legend,
     colorClasses: ColorClassAssigned,
     cytoscapeInstance: cy,
@@ -145,7 +155,11 @@ const main = async (data = 'default.json') => {
   const container = document.querySelectorAll('.kb-html-report')[0];
   const elementsMetadataResponse = await fetch('djornl-metadata.json');
   const elementsMetadata = await elementsMetadataResponse.json();
-  const loadMain = () => main('djornl.json');
+  const loadMain = async () => {
+    const elementsResponse = await fetch('djornl.json');
+    const { nodes, edges } = await elementsResponse.json();
+    main({ nodes, edges });
+  };
   if (!checkData(elementsMetadata)) {
     const { nodes, edges } = elementsMetadata;
     const message = document.createTextNode(
@@ -164,5 +178,5 @@ const main = async (data = 'default.json') => {
     promptUserForConfirmation({ container, messages }, messageContainer, loadMain);
     return;
   }
-  loadMain();
+  await loadMain();
 })();

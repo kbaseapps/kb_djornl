@@ -41,7 +41,7 @@ module.exports = {
       },
     ],
   },
-
+  devtool: 'source-map',
   devServer: {
     contentBase: path.join(__dirname, 'test_local/workdir/tmp/reports'),
     host: 'localhost',

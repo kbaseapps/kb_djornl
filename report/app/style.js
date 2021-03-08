@@ -131,14 +131,40 @@ export const cytoscapeStyle = [
     },
   },
 ];
-export const edgeNames = {
-  'phenotype-association_AraGWAS_subnet_permsig_geni': 'AraGWAS subnet',
-  'phenotype-association_GWAS_gene_to_metabolite_10.1371/journal.pgen.1006363':
-    'GWAS gene to metabolite',
-  'protein-protein-interaction_AtPIN': 'AtPIN',
-  'protein-protein-interaction_Mentha_A_thaliana_3702_040319': 'Mentha A thaliana',
-  'protein-protein-interaction_biogrid_date/release3.5.188': 'BIOGrid',
-  'protein-protein-interaction_literature_curated_AraNet_v2_subnet': 'AraNet subnet',
-  'transcription-factor-regulatory-interaction_literature_curated_ATRM_01082020':
-    'ATRM',
+export const edgeMetadata = {
+  'phenotype-association_AraGWAS_subnet_permsig_geni': {
+    cite: '#aragwas',
+    name: 'AraGWAS subnet',
+    title: 'AraGWAS phenotype association',
+  },
+  'phenotype-association_GWAS_gene_to_metabolite_10.1371/journal.pgen.1006363': {
+    cite: '#gwasgene',
+    name: 'GWAS gene to metabolite',
+    title: 'AraGWAS subnet permsig geni GeneToPhenotype',
+  },
+  'protein-protein-interaction_AtPIN': {
+    cite: '#atpin',
+    name: 'AtPIN',
+    title: 'AtPIN PPI',
+  },
+  'protein-protein-interaction_Mentha_A_thaliana_3702_040319': {
+    cite: '#mentha',
+    name: 'Mentha A thaliana',
+    title: 'Mentha AT 3702 040319 PPI',
+  },
+  'protein-protein-interaction_biogrid_date/release3.5.188': {
+    cite: '#biogrid',
+    name: 'BIOGrid',
+    title: 'BIOGRID ORGANISM Arabidopsis thaliana Columbia 3.5.188 tab3 PPI',
+  },
+  'protein-protein-interaction_literature_curated_AraNet_v2_subnet': {
+    cite: '#aranet',
+    name: 'AraNet subnet',
+    title: 'AraNetv2 subnet AT-LC PPI',
+  },
+  'transcription-factor-regulatory-interaction_literature_curated_ATRM_01082020': {
+    cite: '#atrm',
+    name: 'ATRM',
+    title: 'ATRM TF to Target LitCurated 01082020 TranscriptionFactorToGene',
+  },
 };
