@@ -108,7 +108,7 @@ const cytoscapeLayout = {
   padding: 100,
 };
 /* main screen turn on */
-const main = ({ nodes, edges, loaded }) => {
+const main = ({ nodes, edges, loaded, manifest }) => {
   //cytoscape.use(cytoscapeSpread);
   const nodesCytoscape = nodes.map((node) => annotateNode(node));
   const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
@@ -142,6 +142,7 @@ const main = ({ nodes, edges, loaded }) => {
   renderLegend({
     edgeMetadata,
     legend,
+    manifest,
     colorClasses: ColorClassAssigned,
     cytoscapeInstance: cy,
   });
@@ -158,7 +159,9 @@ const main = ({ nodes, edges, loaded }) => {
   const loadMain = async () => {
     const elementsResponse = await fetch('djornl.json');
     const { nodes, edges } = await elementsResponse.json();
-    main({ nodes, edges });
+    const manifestResponse = await fetch('manifest.json');
+    const manifest = await manifestResponse.json();
+    main({ nodes, edges, manifest });
   };
   if (!checkData(elementsMetadata)) {
     const { nodes, edges } = elementsMetadata;

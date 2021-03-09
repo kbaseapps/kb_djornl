@@ -32,6 +32,9 @@ def run(config, report):  # pylint: disable=too-many-locals
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
         manifest = yaml.safe_load(manifest_file)
+    manifest_json_path = os.path.join(reports_path, "manifest.json")
+    with open(manifest_json_path, "w") as manifest_json:
+        manifest_json.write(json.dumps(manifest))
     edge_types = {
         entry["path"]: entry["title"]
         for entry in manifest["file_list"]

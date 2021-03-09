@@ -91,9 +91,10 @@ const componentMessage = ({ content }) => {
   messageContainer.classList.add('message');
   return messageContainer;
 };
-const componentNetworkTippy = ({ edgeTypeMeta }) => {
+const componentNetworkTippy = ({ edgeTypeMeta, edgemani }) => {
   const contentTippy = document.createElement('span');
-  const citation = document.createTextNode(`${edgeTypeMeta.title} [`);
+  const description = edgemani[edgeTypeMeta.title].description;
+  const citation = document.createTextNode(`${edgeTypeMeta.title}: ${description} [`);
   const link = document.createElement('a');
   link.href = edgeTypeMeta.cite;
   link.appendChild(document.createTextNode('citation'));
@@ -122,7 +123,15 @@ const componentNetworkZone = ({
   edgeMetadata,
   edgeType,
   edgeTypeToggleVisibility,
+  manifest,
 }) => {
+  const edgemani = Object.fromEntries(
+    manifest.file_list
+      .filter((file) => file.data_type === 'edge')
+      .map((file) => {
+        return [file.title, file];
+      })
+  );
   const edgeTypeMeta = edgeMetadata[edgeType];
   const edgeTypeName = edgeTypeMeta.name;
   const label = document.createElement('label');
@@ -145,7 +154,7 @@ const componentNetworkZone = ({
   labelVisibility.setAttribute('for', checkboxVisibility.name);
   li.append(labelVisibility);
   // citation tippy
-  const contentTippy = componentNetworkTippy({ edgeTypeMeta });
+  const contentTippy = componentNetworkTippy({ edgeTypeMeta, edgemani });
   tippy(li, {
     content: contentTippy,
     interactive: true,
@@ -251,6 +260,7 @@ export const renderLegend = ({
   cytoscapeInstance,
   colorClasses,
   edgeMetadata,
+  manifest,
 }) => {
   [...legend.childNodes].forEach((childNode) => childNode.remove());
   const edgeTypeToggleVisibility = (edgeType) => () => {
@@ -267,6 +277,7 @@ export const renderLegend = ({
         edgeMetadata,
         edgeType,
         edgeTypeToggleVisibility,
+        manifest,
       })
     )
     .forEach((item) => legend.appendChild(item));
