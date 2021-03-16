@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import shutil
 import unittest
 from configparser import ConfigParser
 from pprint import pprint
 
-from installed_clients.WorkspaceClient import Workspace
+from installed_clients.WorkspaceClient import Workspace  # pylint: disable=import-error
 
-from kb_djornl.kb_djornlImpl import kb_djornl
-from kb_djornl.kb_djornlServer import MethodContext
+from kb_djornl.kb_djornlImpl import kb_djornl  # pylint: disable=import-error
+from kb_djornl.kb_djornlServer import MethodContext  # pylint: disable=import-error
 from kb_djornl.authclient import (  # pylint: disable=import-error,no-name-in-module
     KBaseAuth as _KBaseAuth,
 )
@@ -65,19 +66,15 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             cls.wsClient.delete_workspace({"workspace": cls.wsName})
             print("Test workspace was deleted")
 
+    def setUp(self):
+        """ remove report dir before each test"""
+        # the scratch dir is named shared in kb_djornlImpl
+        shutil.rmtree(os.path.join(self.scratch, "reports"), ignore_errors=True)
+
     # NOTE: According to Python unittest naming rules test method names should
-    # start from 'test'. # noqa
-    def test_your_method(self):
+    # start with 'test'.
+    def test_run_kb_djornl(self):
         """test case"""
-        # Prepare test objects in workspace if needed using
-        # self.getWsClient().save_objects({'workspace': self.getWsName(),
-        #                                  'objects': []})
-        #
-        # Run your method by
-        # ret = self.getImpl().your_method(self.getContext(), parameters...)
-        #
-        # Check returned data with
-        # self.assertEqual(ret[...], ...) or other unittest methods
         param = """The magic words are `squeamish ossifrage`."""
         ret = self.serviceImpl.run_kb_djornl(
             self.ctx,
@@ -101,3 +98,20 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         print(f">>>>>>>REPORT, ref: {ref}")
         pprint(report)
         self.assertEqual(out["data"][0]["data"]["text_message"], param)
+
+    def test_run_rwr_cv(self):
+        """test case"""
+        ret = self.serviceImpl.run_rwr_cv(
+            self.ctx,
+            {
+                "workspace_name": self.wsName,
+                "gene_keys": "ATCG00280",
+                "node_rank_max": "10",
+            },
+        )
+        ref = ret[0]["report_ref"]
+        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
+        report = out["data"][0]["data"]
+        print(f">>>>>>>REPORT, ref: {ref}")
+        pprint(report)
+        self.assertEqual(report["html_links"][0]["name"], "index.html")

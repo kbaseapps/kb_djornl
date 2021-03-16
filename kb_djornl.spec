@@ -8,9 +8,7 @@ module kb_djornl {
         string report_ref;
     } ReportResults;
 
-    /*
-        This example function accepts any number of parameters and returns results in a KBaseReport
-    */
     funcdef run_kb_djornl(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 
+    funcdef run_rwr_cv(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 };

@@ -3,8 +3,11 @@ MAINTAINER KBase Developer
 
 RUN mkdir -p /kb/module/work
 WORKDIR /kb/module
-# Python requirements
+# Python and R requirements
 RUN conda update -n base -c defaults conda
+COPY ./data/rwrtools.yml /kb/module/data/rwrtools.yml
+COPY ./scripts/rwrtools-env-create.sh /kb/module/scripts/rwrtools-env-create.sh
+RUN ./scripts/rwrtools-env-create.sh
 COPY ./requirements.kb_sdk.txt /kb/module/requirements.kb_sdk.txt
 RUN pip install -r requirements.kb_sdk.txt
 COPY ./requirements.txt /kb/module/requirements.txt

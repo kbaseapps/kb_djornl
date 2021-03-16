@@ -1,0 +1,69 @@
+{
+    "ver": "0.0.1",
+    "authors": [
+        "dakota"
+    ],
+    "contact": "",
+    "categories": ["active"],
+    "widgets": {
+        "input": null,
+        "output": null
+    },
+    "parameters": [
+        {
+            "advanced": "false",
+            "allow_multiple": "false",
+            "field_type": "text",
+            "id": "gene_keys",
+            "optional": "true"
+        },
+        {
+            "advanced": false,
+            "allow_multiple": false,
+            "default_values": [ "10" ],
+            "field_type": "text",
+            "id": "node_rank_max",
+            "optional": false,
+            "text_options": {
+                "max_int" : 1000,
+                "min_int" : 10,
+                "validate_as": "int"
+            }
+        }
+    ],
+    "behavior": {
+        "service-mapping": {
+            "url": "",
+            "name": "kb_djornl",
+            "method": "run_rwr_cv",
+            "input_mapping": [
+                {
+                    "narrative_system_variable": "workspace",
+                    "target_property": "workspace_name"
+                },
+                {
+                    "narrative_system_variable": "workspace_id",
+                    "target_property": "workspace_id"
+                },
+                {
+                    "input_parameter": "gene_keys",
+                    "target_property": "gene_keys"
+                },
+                {
+                    "input_parameter": "node_rank_max",
+                    "target_property": "node_rank_max"
+                }
+            ],
+            "output_mapping": [
+                {
+                    "service_method_output_path": [0,"report_name"],
+                    "target_property": "report_name"
+                },{
+                    "service_method_output_path": [0,"report_ref"],
+                    "target_property": "report_ref"
+                }
+            ]
+        }
+    },
+    "job_id_output_field": "docker"
+}

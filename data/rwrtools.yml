@@ -1,0 +1,22 @@
+name: rwrtools
+channels:
+  - plotly
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - igraph
+  - jupyter
+  - mpi4py
+  - r
+  - r-biocmanager
+  - r-data.table
+  - r-doparallel
+  - r-dplyr
+  - r-foreach
+  - r-igraph=1.2.5
+  - r-irkernel
+  - r-optparse
+  - r-patchwork
+  - r-precrec
+  - r-tidyverse

@@ -7,6 +7,11 @@ For any reference data that is too large to host on Github (greater than
 
 [ref-data-guide]: https://kbase.github.io/kb_sdk_docs/howtos/work_with_reference_data.html
 
+## rwrtools.yml
+
+The conda environment description to run RWRtools. This will go away once
+RWRtools are published.
+
 ## static.txt
 
 A list of static assets required for this report to run locally.

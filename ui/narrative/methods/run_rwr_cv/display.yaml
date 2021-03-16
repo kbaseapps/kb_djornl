@@ -1,0 +1,35 @@
+#
+# define display information
+#
+name: RWRtools CV
+
+tooltip: |
+    RWR Cross Validation performs K-fold cross validation on a single gene
+        set, finding the RWR rank of the left-out genes. Can choose either
+        leave-one-out to leave only one gene from the gene set out and
+        find its rank, or k-fold cross-validation.
+
+screenshots: []
+
+icon: icon.png
+
+#
+# Configure the display and description of parameters
+#
+parameters :
+    gene_keys :
+        ui-name : |
+            Gene Keys
+        short-hint : |
+            Space separated Gene Keys
+    node_rank_max:
+        ui-name : |
+            Maximum node rank
+        short-hint : |
+            Include the top ranked nodes up to this maximum
+
+description : |
+    <p><b>RWR Cross Validation</b> performs K-fold cross validation on a single
+        gene set, finding the RWR rank of the left-out genes. Can choose either
+        leave-one-out to leave only one gene from the gene set out and find its
+        rank, or k-fold cross-validation.
