@@ -47,14 +47,9 @@ def run(config, report):  # pylint: disable=too-many-locals
     reports_path = os.path.join(shared, "reports")
     # include javascript app assets in report
     shutil.copytree(
-        "/kb/module/report/",
+        "/opt/work/build/",
         os.path.join(reports_path),
     )
-    subprocess.run(
-        f"npm run build -- --mode production --output-path {reports_path}".split(" "),
-        check=True,
-    )
-
     # manifest
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
@@ -128,14 +123,9 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
     reports_path = os.path.join(shared, "reports")
     # include javascript app assets in report
     shutil.copytree(
-        "/kb/module/report/",
+        "/opt/work/build/",
         os.path.join(reports_path),
     )
-    subprocess.run(
-        f"npm run build -- --mode production --output-path {reports_path}".split(" "),
-        check=True,
-    )
-
     # manifest
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
@@ -145,12 +135,29 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
         manifest_json.write(json.dumps(manifest))
     gene_keys = params.get("gene_keys", "").split(" ")
     node_rank_max = int(params.get("node_rank_max", 10))
+    cv_method = params.get("method", "kfold")
+    cv_folds = params.get("folds", "5")
+    cv_restart = params.get("restart", ".7")
+    cv_tau = params.get("tau", "1")
     # run RWR_CV
-
     rwrtools_env = dict(os.environ)
     rwrtools_data_path = "/data/RWRtools"
     if os.path.isdir(rwrtools_data_path):
         rwrtools_env["RWR_TOOLS_REPO"] = rwrtools_data_path
+    rwrtools_env[
+        "RWR_TOOLS_COMMAND"
+    ] = f"""Rscript RWR_CV.R
+                --data=multiplexes/Athal_PPI_KO_PENEX_DOM.Rdata
+                --geneset=gold_sets/Athaliana/geneset_LeafSize.txt
+                --method={cv_method}
+                --folds={cv_folds}
+                --restart={cv_restart}
+                --tau={cv_tau}
+                --modname=report
+                --numranked=1
+                --outdir=/opt/work/tmp
+                --verbose=TRUE
+    """
     subprocess.run(
         "/kb/module/scripts/rwrtools-run.sh".split(" "),
         check=True,

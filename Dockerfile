@@ -33,7 +33,10 @@ RUN git clone --depth 1 \
 #     /opt/work/RWRtools
 RUN mkdir -p /opt/work
 COPY ./ /kb/module
+# fix permissions
 RUN chmod -R a+rw /kb/module
+# build js report app
+RUN npm run build -- --mode production --output-path /opt/work/build
 
 RUN make all
 
