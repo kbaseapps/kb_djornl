@@ -27,6 +27,29 @@ parameters :
             Maximum node rank
         short-hint : |
             Include the top ranked nodes up to this maximum
+    method:
+        ui-name : |
+            Method
+        short-hint : |
+            Cross-validation method.
+    folds:
+        ui-name : |
+            Number of folds
+        short-hint : |
+            Number (k) of folds to use in k-fold CV
+    restart:
+        ui-name : |
+            Restart probability
+        short-hint : |
+            Higher values means the walker will jump back to a seed node more
+            often.
+    tau:
+        ui-name : |
+            Tau
+        short-hint : |
+            A comma-separated list of values that must add up to the number of
+            network layers. One value per network layer that determines the
+            probability that the random walker will restart in that layer.
 
 description : |
     <p><b>RWR Cross Validation</b> performs K-fold cross validation on a single

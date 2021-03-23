@@ -105,8 +105,12 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             self.ctx,
             {
                 "workspace_name": self.wsName,
-                "gene_keys": "ATCG00280",
+                "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                 "node_rank_max": "10",
+                "method": "kfold",
+                "folds": "6",
+                "restart": ".8",
+                "tau": ".4,.8,1.2,1.6",
             },
         )
         ref = ret[0]["report_ref"]

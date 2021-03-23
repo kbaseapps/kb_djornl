@@ -29,6 +29,63 @@
                 "min_int" : 10,
                 "validate_as": "int"
             }
+        },
+        {
+            "id": "method",
+            "optional": false,
+            "advanced": true,
+            "allow_multiple": false,
+            "default_values": [ "kfold" ],
+            "field_type": "dropdown",
+            "dropdown_options": {
+                "options": [
+                    {
+                        "value": "kfold",
+                        "display": "kfold",
+                        "id": "kfold",
+                        "ui-name": "kfold"
+                    },
+                    {
+                        "value": "loo",
+                        "display": "loo",
+                        "id": "loo",
+                        "ui-name": "loo"
+                    }
+                ]
+            }
+        },
+        {
+            "advanced": true,
+            "allow_multiple": false,
+            "default_values": [ "5" ],
+            "field_type": "text",
+            "id": "folds",
+            "optional": false,
+            "text_options": {
+                "min_int" : 2,
+                "validate_as": "int"
+            }
+        },
+        {
+            "advanced": true,
+            "allow_multiple": false,
+            "default_values": [ ".7" ],
+            "field_type": "text",
+            "id": "restart",
+            "optional": false,
+            "text_options": {
+                "validate_as": "float",
+                "min_float": 0.0,
+                "max_float": 1.0
+            }
+        },
+        {
+            "advanced": true,
+            "allow_multiple": false,
+            "default_values": [ "1,1,1,1" ],
+            "field_type": "text",
+            "id": "tau",
+            "optional": false
         }
     ],
     "behavior": {
@@ -52,6 +109,22 @@
                 {
                     "input_parameter": "node_rank_max",
                     "target_property": "node_rank_max"
+                },
+                {
+                    "input_parameter": "method",
+                    "target_property": "method"
+                },
+                {
+                    "input_parameter": "folds",
+                    "target_property": "folds"
+                },
+                {
+                    "input_parameter": "restart",
+                    "target_property": "restart"
+                },
+                {
+                    "input_parameter": "tau",
+                    "target_property": "tau"
                 }
             ],
             "output_mapping": [

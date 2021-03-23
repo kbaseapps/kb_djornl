@@ -122,10 +122,7 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
     shared = config.get("shared")
     reports_path = os.path.join(shared, "reports")
     # include javascript app assets in report
-    shutil.copytree(
-        "/opt/work/build/",
-        os.path.join(reports_path),
-    )
+    shutil.copytree("/opt/work/build/", reports_path)
     # manifest
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
@@ -133,7 +130,11 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
     manifest_json_path = os.path.join(reports_path, "manifest.json")
     with open(manifest_json_path, "w") as manifest_json:
         manifest_json.write(json.dumps(manifest))
+    geneset_path = os.path.join(reports_path, "geneset.tsv")
     gene_keys = params.get("gene_keys", "").split(" ")
+    gene_keys_tsv = "".join([f"report\t{gene_key}\n" for gene_key in gene_keys])
+    with open(geneset_path, "w") as geneset_file:
+        geneset_file.write(gene_keys_tsv)
     node_rank_max = int(params.get("node_rank_max", 10))
     cv_method = params.get("method", "kfold")
     cv_folds = params.get("folds", "5")
@@ -147,21 +148,28 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
     ] = f"""Rscript RWR_CV.R
-                --data=multiplexes/Athal_PPI_KO_PENEX_DOM.Rdata
-                --geneset=gold_sets/Athaliana/geneset_LeafSize.txt
-                --method={cv_method}
-                --folds={cv_folds}
-                --restart={cv_restart}
-                --tau={cv_tau}
-                --modname=report
-                --numranked=1
-                --outdir=/opt/work/tmp
-                --verbose=TRUE
+                --data='multiplexes/Athal_PPI_KO_PENEX_DOM.Rdata'
+                --geneset='{geneset_path}'
+                --method='{cv_method}'
+                --folds='{cv_folds}'
+                --restart='{cv_restart}'
+                --tau='{cv_tau}'
+                --modname='report'
+                --numranked='1'
+                --outdir='/opt/work/tmp'
+                --verbose='TRUE'
     """
     subprocess.run(
         "/kb/module/scripts/rwrtools-run.sh".split(" "),
         check=True,
         env=rwrtools_env,
+    )
+    tsv_out_tmpl = "data/RWR-CV_report_report_ARANET_PEN_PIN-PPI_KNOCKOUT.{}.tsv"
+    fullranks_path = os.path.join(reports_path, tsv_out_tmpl.format("fullranks"))
+    medianranks_path = os.path.join(reports_path, tsv_out_tmpl.format("medianranks"))
+    shutil.copytree(
+        "/opt/work/tmp/",
+        os.path.join(reports_path, "data"),
     )
     # fake output data for now
     _id = f"djornl_node/{gene_keys[0]}"
@@ -200,6 +208,16 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
             "description": "report",
             "name": "index.html",
             "path": reports_path,
+        },
+        {
+            "description": "fullranks",
+            "name": "fullranks.tsv",
+            "path": fullranks_path,
+        },
+        {
+            "description": "medianranks",
+            "name": "medianranks.tsv",
+            "path": medianranks_path,
         },
     ]
     report_info = report.create_extended_report(
