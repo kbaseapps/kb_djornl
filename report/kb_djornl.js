@@ -47,6 +47,7 @@ const annotateNode = (node) => {
     selected: false,
     tippy: false,
   };
+  node.classes = [node.data.seed ? 'seed' : ''];
   return node;
 };
 

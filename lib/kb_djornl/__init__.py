@@ -12,8 +12,12 @@ from relation_engine_client import REClient
 
 DATA_ROOT = "/opt/work/exascale_data/"
 
+re_client = REClient(
+    "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
+)
 
-def cytoscape_node(node):
+
+def cytoscape_node(node, seed=False):
     """ convert nodedata into cytoscape format """
     return dict(
         id=node["_id"],
@@ -26,6 +30,7 @@ def cytoscape_node(node):
             desc=node.get("mapman_desc"),
             name=node.get("mapman_name"),
         ),
+        seed=seed,
     )
 
 
@@ -38,6 +43,11 @@ def cytoscape_edge(edge):
         source=edge["_from"],
         target=edge["_to"],
     )
+
+
+def normalized_node_id(node_id):
+    """ normalize node id """
+    return node_id.split("/")[1]
 
 
 def run(config, report):  # pylint: disable=too-many-locals
@@ -64,9 +74,6 @@ def run(config, report):  # pylint: disable=too-many-locals
     }
     print("edge_types", edge_types)
     # arango query
-    re_client = REClient(
-        "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
-    )
     gene_keys = params.get("gene_keys", "").split(" ")
     distance = int(params.get("distance", 1))
     response = re_client.stored_query(
@@ -116,7 +123,7 @@ def run(config, report):  # pylint: disable=too-many-locals
     }
 
 
-def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
+def run_rwr_cv(config, report):  # pylint: disable=too-many-locals too-many-statements
     """ run RWR_CV and generate a report """
     params = config.get("params")
     shared = config.get("shared")
@@ -171,21 +178,39 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals
         "/opt/work/tmp/",
         os.path.join(reports_path, "data"),
     )
-    # fake output data for now
-    _id = f"djornl_node/{gene_keys[0]}"
-    nodes = [dict(_id=_id) for gene_key in gene_keys]
+    # filter fullranks based on node_rank_max to get ranked nodes
+    fullranks_limit = min(int(cv_folds), len(gene_keys)) * node_rank_max + 1
+    with open(fullranks_path) as fullranks_tsv:
+        fullranks_head = [next(fullranks_tsv) for i in range(fullranks_limit)]
+    genes = set(
+        [
+            line.split("\t")[0]
+            for line in fullranks_head[1:]
+            if int(line.split("\t")[2]) <= node_rank_max
+        ]
+        + gene_keys
+    )
+    # get re output using djornl_fetch_genes stored query with distance 1
+    response = re_client.stored_query(
+        "djornl_fetch_genes", dict(gene_keys=list(genes), distance=1)
+    )
+    nodes_raw = response["results"][0]["nodes"]
+    edges_raw = response["results"][0]["edges"]
+    # filter stored query for seed nodes (gene_keys) and ranked nodes
+    nodes = [node for node in nodes_raw if normalized_node_id(node["_id"]) in genes]
     edges = [
-        dict(
-            _from=_id,
-            _id="edge",
-            _to=_id,
-            edge_type="protein-protein-interaction_Mentha_A_thaliana_3702_040319",
-            score=1,
+        edge
+        for edge in edges_raw
+        if (
+            normalized_node_id(edge["_from"]) in genes
+            and normalized_node_id(edge["_to"]) in genes
         )
-        for key in gene_keys
     ]
     # graph data
-    cytoscape_nodes = [dict(data=cytoscape_node(node)) for node in nodes]
+    cytoscape_nodes = [
+        dict(data=cytoscape_node(node, normalized_node_id(node["_id"]) in gene_keys))
+        for node in nodes
+    ]
     cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
     cytoscape_data = dict(
         nodes=cytoscape_nodes,

@@ -53,6 +53,15 @@ const componentCheckboxSelect = ({ node }) => {
   selectDiv.appendChild(selectLabel);
   return selectDiv;
 };
+const componentCellGOTerms = ({ terms }) => {
+  const ul = document.createElement('ul');
+  terms.forEach((term) => {
+    const ili = document.createElement('li');
+    ili.append(document.createTextNode(term));
+    ul.append(ili);
+  });
+  return ul;
+};
 const componentCellMapman = ({ bin, desc, name }) => {
   // wbr indicates a possible word break, allowing Mapman names to wrap.
   const wbr = () => document.createElement('wbr');
@@ -69,14 +78,12 @@ const componentCellMapman = ({ bin, desc, name }) => {
   elements.forEach((elt) => div.appendChild(elt));
   return div;
 };
-const componentCellGOTerms = ({ terms }) => {
-  const ul = document.createElement('ul');
-  terms.forEach((term) => {
-    const ili = document.createElement('li');
-    ili.append(document.createTextNode(term));
-    ul.append(ili);
-  });
-  return ul;
+const componentCellName = ({ name }) => {
+  const link = document.createElement('a');
+  link.href = `/#dataview/16026/460/36?sub=Feature&subid=${name}`;
+  link.target = '_blank';
+  link.appendChild(document.createTextNode(name));
+  return link;
 };
 const componentMessage = ({ content }) => {
   const contentNode = document.createTextNode(content);
@@ -375,6 +382,7 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, sort }) => {
   const tableDataFormat = {
     GOTerms: (terms) => componentCellGOTerms({ terms }),
     mapman: ({ bin, desc, name }) => componentCellMapman({ bin, desc, name }),
+    name: (name) => componentCellName({ name }),
   };
   const sortedNodes = cy.nodes().sort(sortFn);
   sortedNodes.forEach((node) => {
