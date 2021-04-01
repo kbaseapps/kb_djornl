@@ -73,6 +73,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
 
     # NOTE: According to Python unittest naming rules test method names should
     # start with 'test'.
+    # @unittest.skip("Skip test for debugging")
     def test_run_kb_djornl(self):
         """test case"""
         param = """The magic words are `squeamish ossifrage`."""
@@ -100,7 +101,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         self.assertEqual(out["data"][0]["data"]["text_message"], param)
 
     def test_run_rwr_cv(self):
-        """test case"""
+        """RWR CV test case"""
         ret = self.serviceImpl.run_rwr_cv(
             self.ctx,
             {
@@ -116,6 +117,45 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         ref = ret[0]["report_ref"]
         out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
         report = out["data"][0]["data"]
-        print(f">>>>>>>REPORT, ref: {ref}")
-        pprint(report)
+        self.assertEqual(report["html_links"][0]["name"], "index.html")
+
+    def test_run_rwr_loe_context_analysis(self):
+        """RWR LOE context_analysis test case"""
+        ret = self.serviceImpl.run_rwr_loe(
+            self.ctx,
+            {
+                "workspace_name": self.wsName,
+                "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                "node_rank_max": "10",
+                "restart": ".8",
+                "tau": ".4,.8,1.2,1.6",
+            },
+        )
+        ref = ret[0]["report_ref"]
+        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
+        report = out["data"][0]["data"]
+        self.assertEqual(report["html_links"][0]["name"], "index.html")
+
+    def test_run_rwr_loe_target(self):
+        """RWR LOE target test case"""
+        ret = self.serviceImpl.run_rwr_loe(
+            self.ctx,
+            {
+                "workspace_name": self.wsName,
+                "gene_keys": (
+                    "AT2G39990 AT4G24240 AT5G02820 AT1G15550"
+                    "AT1G02910 AT2G18710 AT2G21330 AT2G40400"
+                ),
+                "gene_keys2": (
+                    "AT3G17930 AT4G39640 AT5G66190 AT1G23310"
+                    "AT5G51820 AT2G39800 AT2G38120 AT2G38170"
+                ),
+                "node_rank_max": "100",
+                "restart": ".8",
+                "tau": ".4,.8,1.2,1.6",
+            },
+        )
+        ref = ret[0]["report_ref"]
+        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
+        report = out["data"][0]["data"]
         self.assertEqual(report["html_links"][0]["name"], "index.html")

@@ -1,0 +1,57 @@
+#
+# define display information
+#
+name: RWRtools LOE
+
+tooltip: |
+    RWR Lines of Evidence performs RWR from one geneset to see how many of
+        another geneset are highly ranked. This can be used to build multiple
+        lines of evidence from the various input networks to relate the two
+        gene sets. This script will run RWR using the first geneset against the
+        entire genome, but reports only the ranks from the second gene set.
+
+screenshots: []
+
+icon: icon.png
+
+#
+# Configure the display and description of parameters
+#
+parameters :
+    gene_keys :
+        ui-name : |
+            Seed Gene Keys
+        short-hint : |
+            If no target gene keys are provided below then these seeds will be
+            used in a context analysis
+    gene_keys2 :
+        ui-name : |
+            Target Gene Keys
+        short-hint : |
+            Space separated Gene Keys
+    node_rank_max:
+        ui-name : |
+            Maximum node rank
+        short-hint : |
+            Include the top ranked nodes up to this maximum
+    restart:
+        ui-name : |
+            Restart probability
+        short-hint : |
+            Higher values means the walker will jump back to a seed node more
+            often.
+    tau:
+        ui-name : |
+            Tau
+        short-hint : |
+            A comma-separated list of values that must add up to the number of
+            network layers. One value per network layer that determines the
+            probability that the random walker will restart in that layer.
+
+description : |
+    <p><b>RWR Lines of Evidence</b> performs RWR from one geneset to see how
+        many of another geneset are highly ranked. This can be used to build
+        multiple lines of evidence from the various input networks to relate
+        the two gene sets. This script will run RWR using the first geneset
+        against the entire genome, but reports only the ranks from the second
+        gene set.</p>

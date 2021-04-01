@@ -4,7 +4,7 @@ import logging
 import os
 
 from installed_clients.KBaseReportClient import KBaseReport
-from . import run, run_rwr_cv
+from . import run, run_rwr_cv, run_rwr_loe
 #END_HEADER
 
 
@@ -25,7 +25,7 @@ class kb_djornl:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = "git@github.com:kbaseapps/kb_djornl.git"
-    GIT_COMMIT_HASH = "b73c2c3ed2083a2d73c68a1666531419a4c77350"
+    GIT_COMMIT_HASH = "b9407fdd6d3f424209c12af493b529ff9f6a5a91"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -86,6 +86,30 @@ class kb_djornl:
         # At some point might do deeper type checking...
         if not isinstance(output, dict):
             raise ValueError('Method run_rwr_cv return value ' +
+                             'output is not type dict as required.')
+        # return the results
+        return [output]
+
+    def run_rwr_loe(self, ctx, params):
+        """
+        :param params: instance of mapping from String to unspecified object
+        :returns: instance of type "ReportResults" -> structure: parameter
+           "report_name" of String, parameter "report_ref" of String
+        """
+        # ctx is the context object
+        # return variables are: output
+        #BEGIN run_rwr_loe
+        report = KBaseReport(self.callback_url, service_ver="dev")
+        config = dict(
+            params=params,
+            shared=self.shared_folder,
+        )
+        output = run_rwr_loe(config, report)
+        #END run_rwr_loe
+
+        # At some point might do deeper type checking...
+        if not isinstance(output, dict):
+            raise ValueError('Method run_rwr_loe return value ' +
                              'output is not type dict as required.')
         # return the results
         return [output]

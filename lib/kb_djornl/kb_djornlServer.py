@@ -346,6 +346,10 @@ class Application(object):
                              name='kb_djornl.run_rwr_cv',
                              types=[dict])
         self.method_authentication['kb_djornl.run_rwr_cv'] = 'required'  # noqa
+        self.rpc_service.add(impl_kb_djornl.run_rwr_loe,
+                             name='kb_djornl.run_rwr_loe',
+                             types=[dict])
+        self.method_authentication['kb_djornl.run_rwr_loe'] = 'required'  # noqa
         self.rpc_service.add(impl_kb_djornl.status,
                              name='kb_djornl.status',
                              types=[dict])

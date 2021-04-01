@@ -155,10 +155,10 @@ const main = ({ nodes, edges, loaded, manifest }) => {
 (async () => {
   const messages = document.getElementById('messages');
   const container = document.querySelectorAll('.kb-html-report')[0];
-  const elementsMetadataResponse = await fetch('djornl-metadata.json');
+  const elementsMetadataResponse = await fetch('graph-metadata.json');
   const elementsMetadata = await elementsMetadataResponse.json();
   const loadMain = async () => {
-    const elementsResponse = await fetch('djornl.json');
+    const elementsResponse = await fetch('graph.json');
     const { nodes, edges } = await elementsResponse.json();
     const manifestResponse = await fetch('manifest.json');
     const manifest = await manifestResponse.json();

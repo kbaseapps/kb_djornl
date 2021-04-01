@@ -18,6 +18,13 @@
             "optional": "false"
         },
         {
+            "advanced": "false",
+            "allow_multiple": "false",
+            "field_type": "text",
+            "id": "gene_keys2",
+            "optional": "true"
+        },
+        {
             "advanced": false,
             "allow_multiple": false,
             "default_values": [ "10" ],
@@ -27,42 +34,6 @@
             "text_options": {
                 "max_int" : 1000,
                 "min_int" : 10,
-                "validate_as": "int"
-            }
-        },
-        {
-            "id": "method",
-            "optional": false,
-            "advanced": true,
-            "allow_multiple": false,
-            "default_values": [ "kfold" ],
-            "field_type": "dropdown",
-            "dropdown_options": {
-                "options": [
-                    {
-                        "value": "kfold",
-                        "display": "kfold",
-                        "id": "kfold",
-                        "ui-name": "kfold"
-                    },
-                    {
-                        "value": "loo",
-                        "display": "loo",
-                        "id": "loo",
-                        "ui-name": "loo"
-                    }
-                ]
-            }
-        },
-        {
-            "advanced": true,
-            "allow_multiple": false,
-            "default_values": [ "5" ],
-            "field_type": "text",
-            "id": "folds",
-            "optional": false,
-            "text_options": {
-                "min_int" : 2,
                 "validate_as": "int"
             }
         },
@@ -92,7 +63,7 @@
         "service-mapping": {
             "url": "",
             "name": "kb_djornl",
-            "method": "run_rwr_cv",
+            "method": "run_rwr_loe",
             "input_mapping": [
                 {
                     "narrative_system_variable": "workspace",
@@ -107,16 +78,12 @@
                     "target_property": "gene_keys"
                 },
                 {
+                    "input_parameter": "gene_keys2",
+                    "target_property": "gene_keys2"
+                },
+                {
                     "input_parameter": "node_rank_max",
                     "target_property": "node_rank_max"
-                },
-                {
-                    "input_parameter": "method",
-                    "target_property": "method"
-                },
-                {
-                    "input_parameter": "folds",
-                    "target_property": "folds"
                 },
                 {
                     "input_parameter": "restart",

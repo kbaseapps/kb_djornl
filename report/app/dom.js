@@ -80,7 +80,8 @@ const componentCellMapman = ({ bin, desc, name }) => {
 };
 const componentCellName = ({ name }) => {
   const link = document.createElement('a');
-  link.href = `/#dataview/16026/460/36?sub=Feature&subid=${name}`;
+  const workspace = 'Phytozome_Genomes/Athaliana_TAIR10';
+  link.href = `/#dataview/${workspace}?sub=Feature&subid=${name}`;
   link.target = '_blank';
   link.appendChild(document.createTextNode(name));
   return link;
