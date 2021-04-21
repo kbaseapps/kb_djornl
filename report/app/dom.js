@@ -92,12 +92,33 @@ const componentMessage = ({ content }) => {
   loadingIcon.classList.add('fa');
   loadingIcon.classList.add('fa-refresh');
   loadingIcon.classList.add('fa-spin');
-  const messageContainer = document.createElement('span');
-  messageContainer.appendChild(contentNode);
-  messageContainer.appendChild(loadingIcon);
-  messageContainer.classList.add('loading');
-  messageContainer.classList.add('message');
-  return messageContainer;
+  const span = document.createElement('span');
+  span.appendChild(contentNode);
+  span.appendChild(loadingIcon);
+  span.classList.add('loading');
+  span.classList.add('message');
+  return span;
+};
+export const componentMessageAcknowledge = ({ message, callback }) => {
+  const div = document.createElement('div');
+  div.id = 'messages';
+  const messageNode = document.createTextNode(message);
+  const ackButton = document.createElement('button');
+  ackButton.appendChild(document.createTextNode('OK'));
+  ackButton.addEventListener('click', callback);
+  const span = document.createElement('span');
+  span.classList.add('message');
+  span.appendChild(messageNode);
+  span.appendChild(ackButton);
+  div.appendChild(span);
+  return div;
+};
+export const componentMessageLoading = () => {
+  const div = document.createElement('div');
+  div.id = 'messages';
+  const messageComponent = componentMessage({ content: 'Loading...' });
+  div.appendChild(messageComponent);
+  return div;
 };
 const componentNetworkTippy = ({ edgeTypeMeta, edgemani }) => {
   const contentTippy = document.createElement('span');
@@ -217,6 +238,34 @@ export const componentTippy = ({ data }) => {
   tippyItems.forEach((item) => ul.appendChild(item));
   return ul;
 };
+export const componentULLegend = ({
+  cytoscapeInstance,
+  colorClasses,
+  edgeMetadata,
+  manifest,
+}) => {
+  const legend = document.createElement('ul');
+  legend.id = 'legend';
+  const edgeTypeToggleVisibility = (edgeType) => () => {
+    cytoscapeInstance
+      .edges()
+      .filter((edge) => edge.data().edgeType === edgeType)
+      .forEach((edge) => edge.toggleClass('hidden'));
+  };
+  // legend
+  Object.entries(colorClasses)
+    .map(([edgeType, colorClass]) =>
+      componentNetworkZone({
+        colorClass,
+        edgeMetadata,
+        edgeType,
+        edgeTypeToggleVisibility,
+        manifest,
+      })
+    )
+    .forEach((item) => legend.appendChild(item));
+  return legend;
+};
 /* ui cells */
 export const makeTippy = (ele, fragment) => {
   const ref = ele.popperRef();
@@ -240,58 +289,22 @@ export const makeTippy = (ele, fragment) => {
   });
   return tip;
 };
-// prompt user for confirmation
-export const promptUserForConfirmation = (doms, message, callback) => {
-  const { container, messages } = doms;
-  const updateMessage = (content, options) => {
-    [...messages.childNodes].forEach((childNode) => childNode.remove());
-    messages.appendChild(content);
-    if (options) {
-      const { handler, selector } = options;
-      const handle = messages.querySelector(selector);
-      handle.addEventListener('click', handler);
-    }
-  };
-  messages.classList.toggle('hidden');
-  container.classList.toggle('blur');
-  const ackHandler = async () => {
-    const messageContainer = componentMessage({ content: 'Loading...' });
-    updateMessage(messageContainer);
-    await callback();
-    container.classList.toggle('blur');
-    messages.classList.toggle('hidden');
-  };
-  updateMessage(message, { selector: 'button', handler: ackHandler });
+export const swapElement = (original, replacement) => {
+  if (!replacement) return;
+  if (original === replacement) return;
+  const parentDOM = original.parentElement;
+  const index = Array.from(parentDOM.children).indexOf(original);
+  const children = Array.from(parentDOM.children);
+  const childrenNew = [
+    ...children.slice(0, index),
+    replacement,
+    ...children.slice(index + 1),
+  ];
+  parentDOM.replaceChildren(...childrenNew);
 };
-export const renderLegend = ({
-  legend,
-  cytoscapeInstance,
-  colorClasses,
-  edgeMetadata,
-  manifest,
-}) => {
-  [...legend.childNodes].forEach((childNode) => childNode.remove());
-  const edgeTypeToggleVisibility = (edgeType) => () => {
-    cytoscapeInstance
-      .edges()
-      .filter((edge) => edge.data().edgeType === edgeType)
-      .forEach((edge) => edge.toggleClass('hidden'));
-  };
-  // legend
-  Object.entries(colorClasses)
-    .map(([edgeType, colorClass]) =>
-      componentNetworkZone({
-        colorClass,
-        edgeMetadata,
-        edgeType,
-        edgeTypeToggleVisibility,
-        manifest,
-      })
-    )
-    .forEach((item) => legend.appendChild(item));
-  return legend;
-};
-export const renderTable = ({ table, cytoscapeInstance, highlight, sort }) => {
+export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) => {
+  if (!table) return table;
+  const { sort } = appState.state;
   // node-data selection/collection table
   const cy = cytoscapeInstance;
   [...table.childNodes].forEach((childNode) => childNode.remove());
@@ -373,7 +386,7 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, sort }) => {
         sortReverse = -sortReverse;
         sortNew = sortReverse === 1 ? sortOn : `-${sortOn}`;
       }
-      renderTable({ table, cytoscapeInstance: cy, sort: sortNew });
+      appState.setState({ sort: sortNew });
     };
     return span;
   });

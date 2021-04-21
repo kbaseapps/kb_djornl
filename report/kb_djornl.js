@@ -3,14 +3,15 @@
 import 'regenerator-runtime/runtime';
 import cytoscape from 'cytoscape';
 import popper from 'cytoscape-popper';
-
 // Local dependencies
 import {
+  componentMessageAcknowledge,
+  componentMessageLoading,
   componentTippy,
+  componentULLegend,
   makeTippy,
-  promptUserForConfirmation,
-  renderLegend,
   renderTable,
+  swapElement,
 } from './app/dom.js';
 import {
   cytoscapeStyle,
@@ -18,7 +19,7 @@ import {
   edgeColors,
   edgeMetadata,
 } from './app/style.js';
-
+import { WOF } from './app/wof.js';
 /* element data */
 const ColorClassAssigned = {};
 const scaleScore = (score) => {
@@ -48,11 +49,44 @@ const annotateNode = (node) => {
     tippy: false,
   };
   node.classes = [node.data.seed ? 'seed' : ''];
+  if (node.data.position) {
+    node.position = node.data.position;
+  }
   return node;
 };
-
+/* App state management */
+/* This object deliberately imitates the data model of React. */
+class State {
+  constructor(state, callback) {
+    this.state = state;
+    this.callback = callback;
+  }
+  setState(state) {
+    this.state = { ...this.state, ...state };
+    this.callback(this);
+    return this.state;
+  }
+}
 /* event handlers */
-const nodeSelectChangeHandler = (evt) => {
+const layoutChangeHandlerFactory = (appState) => {
+  let timer;
+  const { wof } = appState.state;
+  const updateAfter = 250; // how long to wait before updating position state
+  return (evt) => {
+    const update = async () => {
+      appState.setState({ loading: true });
+      const nodesCyRaw = evt.cy
+        .nodes()
+        .map((node) => ({ ...node.data(), position: node.position() }));
+      const nodes = nodesCyRaw.map((nodecy) => annotateNode({ data: nodecy }));
+      await wof.putStoredNodes(nodes);
+      appState.setState({ nodes, layout: false, loading: false });
+    };
+    clearTimeout(timer);
+    timer = setTimeout(update, updateAfter);
+  };
+};
+const nodeSelectChangeHandlerFactory = (appState) => (evt) => {
   // selected node
   const id = evt.target.data().id;
   // get or make the tippy element for this node
@@ -81,19 +115,32 @@ const nodeSelectChangeHandler = (evt) => {
   }
   // render the table to update selections
   const table = document.getElementById('node-data');
-  renderTable({ table, cytoscapeInstance: evt.cy, highlight });
+  // TODO: fix sort
+  const tableNew = renderTable({
+    table,
+    cytoscapeInstance: evt.cy,
+    highlight,
+    appState,
+  });
+  swapElement(table, tableNew);
 };
 const nodeClickHandler = (evt) => {
   console.log(evt.target.data().name); // eslint-disable-line no-console
 };
 /* metadata checks */
-const checkData = (metadata) => {
+const loadMetadata = async () => {
+  const metadataResponse = await fetch('graph-metadata.json');
+  const metadata = await metadataResponse.json();
   console.log('metadata', metadata); // eslint-disable-line no-console
-  if (metadata.nodes > 50) {
-    console.log('More than 50 nodes.'); // eslint-disable-line no-console
-    return false;
-  }
-  return true;
+  return {
+    nodesMeta: metadata.nodes,
+    edgesMeta: metadata.edges,
+    stateWSRef: metadata.state,
+    wsurl: metadata.wsurl,
+  };
+};
+const graphIsLarge = ({ nodes }) => {
+  return nodes > 50;
 };
 /* initial layout */
 const cytoscapeLayout = {
@@ -109,18 +156,48 @@ const cytoscapeLayout = {
   padding: 100,
 };
 /* main screen turn on */
-const main = ({ nodes, edges, loaded, manifest }) => {
-  //cytoscape.use(cytoscapeSpread);
+const main = ({ appState }) => {
+  const {
+    nodes,
+    edges,
+    initialized,
+    layout,
+    loading,
+    manifest,
+    message,
+    messageCallback,
+  } = appState.state;
+  const messages = document.getElementById('messages');
+  const container = document.querySelectorAll('.kb-html-report')[0];
+  /* Indicate whether loading is in process. */
+  if (loading) {
+    swapElement(messages, componentMessageLoading());
+    container.classList.add('blur');
+  } else {
+    messages.classList.add('hidden');
+    container.classList.remove('blur');
+  }
+  /* If a message is present then show it to the user */
+  if (message) {
+    const messageContainer = componentMessageAcknowledge({
+      message,
+      callback: messageCallback,
+    });
+    swapElement(messages, messageContainer);
+    return;
+  }
+  /* Convert graph data to cytoscape format.  */
   const nodesCytoscape = nodes.map((node) => annotateNode(node));
   const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
   let useLayout = cytoscapeLayout;
-  if (loaded) {
-    // set these values on subsequent loads
+  if (!layout) {
     useLayout = { name: 'preset' };
-  } else {
-    // load popper on first load
+  }
+  if (!initialized) {
+    // Load popper plugin on first render only.
     cytoscape.use(popper);
   }
+  /* Initialize cytoscape instance.  */
   const cyDOM = document.getElementById('cy');
   const cy = cytoscape({
     container: cyDOM,
@@ -131,56 +208,124 @@ const main = ({ nodes, edges, loaded, manifest }) => {
     style: cytoscapeStyle,
     zoom: 4,
   });
-  // add event handlers
+  // Instantiate and register event handlers.
+  const layoutChangeHandler = layoutChangeHandlerFactory(appState);
+  const nodeSelectChangeHandler = nodeSelectChangeHandlerFactory(appState);
   cy.nodes().on('click', nodeClickHandler);
+  cy.nodes().on('position', layoutChangeHandler);
   cy.nodes().on('select', nodeSelectChangeHandler);
   cy.nodes().on('unselect', nodeSelectChangeHandler);
   /* debug */
-  console.log('cytoscape', cy); // eslint-disable-line no-console
+  if (!initialized) {
+    console.log('cytoscape', cy); // eslint-disable-line no-console
+  }
+  window.cy = cy;
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
-  renderLegend({
+  const legendNew = componentULLegend({
     edgeMetadata,
-    legend,
     manifest,
     colorClasses: ColorClassAssigned,
     cytoscapeInstance: cy,
   });
+  swapElement(legend, legendNew);
   // table#node-data
   const table = document.getElementById('node-data');
-  renderTable({ table, cytoscapeInstance: cy });
+  const tableNew = renderTable({ table, cytoscapeInstance: cy, appState });
+  swapElement(table, tableNew);
+};
+// Load manifest, graph and state information from the workspace.
+const loadManifestAndGraph = async (wof) => {
+  const manifestResponse = await fetch('manifest.json');
+  const manifest = await manifestResponse.json();
+  const elementsResponse = await fetch('graph.json');
+  let { nodes, edges } = await elementsResponse.json(); // eslint-disable-line prefer-const
+  /* Currently, the workspace object stores only nodes and their positions. */
+  const storedNodes = await wof.getStoredNodes();
+  let layout = true;
+  if (storedNodes.length === nodes.length) {
+    nodes = storedNodes;
+    layout = false;
+  }
+  return [edges, layout, manifest, nodes];
+};
+// Load graph and workspace data and initialize state.
+const loadAndRenderGraph = async (appState, stateWSRef) => {
+  const { wof } = appState.state;
+  const [edges, layout, manifest, nodes] = await loadManifestAndGraph(wof);
+  appState.setState({
+    edges,
+    layout,
+    manifest,
+    nodes,
+    stateWSRef,
+    initialized: true,
+    loading: false,
+    message: '',
+    messageCallback: () => {},
+  });
 };
 // initalize environment
 (async () => {
-  const messages = document.getElementById('messages');
-  const container = document.querySelectorAll('.kb-html-report')[0];
-  const elementsMetadataResponse = await fetch('graph-metadata.json');
-  const elementsMetadata = await elementsMetadataResponse.json();
-  const loadMain = async () => {
-    const elementsResponse = await fetch('graph.json');
-    const { nodes, edges } = await elementsResponse.json();
-    const manifestResponse = await fetch('manifest.json');
-    const manifest = await manifestResponse.json();
-    main({ nodes, edges, manifest });
-  };
-  if (!checkData(elementsMetadata)) {
-    const { nodes, edges } = elementsMetadata;
-    const message = document.createTextNode(
-      [
-        'Refusing to load large dataset automatically.',
-        `This graph contains ${nodes} nodes and ${edges} edges.`,
-        'Click the button to load anyway.',
-      ].join(' ')
-    );
-    const ackButton = document.createElement('button');
-    ackButton.appendChild(document.createTextNode('OK'));
-    const messageContainer = document.createElement('span');
-    messageContainer.classList.add('message');
-    messageContainer.appendChild(message);
-    messageContainer.appendChild(ackButton);
-    promptUserForConfirmation({ container, messages }, messageContainer, loadMain);
+  /* Read Cookies */
+  const cookies = Object.fromEntries(
+    document.cookie.split('; ').map((cookie) => cookie.split('=', 2))
+  );
+  /* Instantiate workspace object facade for state persistence. */
+  const wof = new WOF({
+    kbase_session: cookies.kbase_session, // eslint-disable-line camelcase
+  });
+  /* Initialize appState. */
+  const appState = new State(
+    {
+      wof,
+      edges: [],
+      initialized: false,
+      layout: true,
+      loading: false,
+      manifest: {
+        file_list: [], // eslint-disable-line camelcase
+      },
+      message: '',
+      messageCallback: () => {},
+      nodes: [],
+      sort: 'selected',
+      stateWSRef: '',
+    },
+    /* Render the graph when appState.state is updated. */
+    (appState) => {
+      main({ appState });
+    }
+  );
+  /* loading metadata */
+  appState.setState({ loading: true });
+  const { nodesMeta, edgesMeta, stateWSRef, wsurl } = await loadMetadata();
+  wof.setURL(wsurl);
+  wof.setRef(stateWSRef);
+  /* metadata checks */
+  if (graphIsLarge({ nodes: nodesMeta })) {
+    const graphIsLargeMessage = [
+      'Refusing to load large dataset automatically.',
+      `This graph contains ${nodesMeta} nodes and ${edgesMeta} edges.`,
+      'Click the button to load anyway.',
+    ].join(' ');
+    const graphIsLargeCallback = async () => {
+      appState.setState({
+        loading: true,
+        message: '',
+        messageCallback: () => {},
+      });
+      await loadAndRenderGraph(appState, stateWSRef);
+    };
+    /* Stop loading and prompt user to load large graph. */
+    appState.setState({
+      initialized: true,
+      message: graphIsLargeMessage,
+      messageCallback: graphIsLargeCallback,
+      loading: false,
+    });
     return;
   }
-  await loadMain();
+  await loadAndRenderGraph(appState, stateWSRef);
 })();
