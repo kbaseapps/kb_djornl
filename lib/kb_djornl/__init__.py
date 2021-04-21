@@ -1,5 +1,6 @@
 """ kb_djornl code """
 
+import configparser
 import json
 import os
 import shutil
@@ -50,9 +51,86 @@ def genes_to_rwr_tsv(genes):
     return "".join([f"report\t{gene}\n" for gene in genes])
 
 
+def get_object_ref(object_info_dict):
+    """ Format an object ref from a KBase object info dictionary. """
+    return "{wsid}/{objid}/{ver}".format(**object_info_dict)
+
+
+def get_wsurl():
+    """ Get the workspace url for this environment. """
+    config_file = os.environ.get("KB_DEPLOYMENT_CONFIG")
+    config_p = configparser.ConfigParser()
+    config_p.read(config_file)
+    return config_p["kb_djornl"]["workspace-url"]
+
+
 def normalized_node_id(node_id):
     """ normalize node id """
     return node_id.split("/")[1]
+
+
+def object_info_as_dict(object_info):
+    """ Convert a KBase object_info list into a dictionary. """
+    [
+        _id,
+        _name,
+        _type,
+        _save,
+        _version,
+        _owner,
+        _ws,
+        _ws_name,
+        _md5,
+        _size,
+        _meta,
+    ] = object_info
+    return dict(
+        objid=_id,
+        name=_name,
+        type=_type,
+        save_date=_save,
+        ver=_version,
+        saved_by=_owner,
+        wsid=_ws,
+        workspace=_ws_name,
+        chsum=_md5,
+        size=_size,
+        meta=_meta,
+    )
+
+
+def put_graph_metadata(metadata, config):
+    """Save graph metadata to a file
+    Create a workspace state object.
+    """
+    dfu = config["dfu"]
+    report_name = config["report_name"]
+    reports_path = config["reports_path"]
+    ws_name = config["ws_name"]
+    # create object to store state metadata
+    report_state_params = {
+        "id": dfu.ws_name_to_id(ws_name),
+        "objects": [
+            {
+                "type": "KBaseNarrative.Metadata-3.0",
+                "name": f"{report_name}-state",
+                "data": {
+                    "data_dependencies": [],
+                    "description": "{}",
+                    "format": "JSON",
+                },
+            }
+        ],
+    }
+    report_state = dfu.save_objects(report_state_params)
+    report_state_ref = get_object_ref(object_info_as_dict(report_state[0]))
+    # add extra metadata
+    metadata["state"] = report_state_ref
+    metadata["wsurl"] = get_wsurl()
+    # save metadata
+    metadata_path = os.path.join(reports_path, "graph-metadata.json")
+    with open(metadata_path, "w") as metadata_json:
+        metadata_json.write(json.dumps(metadata))
 
 
 def re_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-locals
@@ -96,13 +174,10 @@ def re_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-loca
     with open(cytoscape_path, "w") as cytoscape_json:
         cytoscape_json.write(json.dumps(cytoscape_data))
     # graph metadata
-    cytoscape_metadata = dict(
+    return dict(
         nodes=len(nodes),
         edges=len(edges),
     )
-    cytoscape_metadata_path = os.path.join(output_path, "graph-metadata.json")
-    with open(cytoscape_metadata_path, "w") as cytoscape_metadata_json:
-        cytoscape_metadata_json.write(json.dumps(cytoscape_metadata))
 
 
 def run(config, report):  # pylint: disable=too-many-locals
@@ -168,7 +243,7 @@ def run(config, report):  # pylint: disable=too-many-locals
             "direct_html_link_index": 0,
             "html_links": html_links,
             "message": """The magic words are `squeamish ossifrage`.""",
-            "report_object_name": f"kb_checkv_report_{str(uuid.uuid4())}",
+            "report_object_name": f"kb_djornl_report_{str(uuid.uuid4())}",
             "workspace_name": params["workspace_name"],
         }
     )
@@ -178,7 +253,9 @@ def run(config, report):  # pylint: disable=too-many-locals
     }
 
 
-def run_rwr_cv(config, report):  # pylint: disable=too-many-locals too-many-statements
+def run_rwr_cv(
+    config, report, dfu
+):  # pylint: disable=too-many-locals too-many-statements
     """ run RWR_CV and generate a report """
     params = config.get("params")
     shared = config.get("shared")
@@ -242,8 +319,21 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals too-many-stat
         for line in fullranks_head[1:]
         if int(line.split("\t")[2]) <= node_rank_max
     ]
-    # Get subgraph to display from RE
-    re_subgraph(gene_keys, genes_ranked_top, reports_path)
+    # Get subgraph to display from RE and save to file
+    graph_metadata = re_subgraph(gene_keys, genes_ranked_top, reports_path)
+    report_name = f"kb_rwr_cv_report_{str(uuid.uuid4())}"
+    # Save graph metadata to a file in the report.
+    ws_name = params["workspace_name"]
+    put_graph_metadata(
+        graph_metadata,
+        dict(
+            dfu=dfu,
+            report_name=report_name,
+            reports_path=reports_path,
+            ws_name=ws_name,
+        ),
+    )
+    # create report object
     html_links = [
         {
             "description": "report",
@@ -266,8 +356,8 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals too-many-stat
             "direct_html_link_index": 0,
             "html_links": html_links,
             "message": (f"""Report for RWR_CV with rank <= {node_rank_max}"""),
-            "report_object_name": f"kb_checkv_report_{str(uuid.uuid4())}",
-            "workspace_name": params["workspace_name"],
+            "report_object_name": report_name,
+            "workspace_name": ws_name,
         }
     )
     return {
@@ -276,7 +366,7 @@ def run_rwr_cv(config, report):  # pylint: disable=too-many-locals too-many-stat
     }
 
 
-def run_rwr_loe(config, report):  # pylint: disable=too-many-locals
+def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
     """ run RWR_LOE and generate a report """
     params = config.get("params")
     shared = config.get("shared")
@@ -348,8 +438,21 @@ def run_rwr_loe(config, report):  # pylint: disable=too-many-locals
         [line.split("\t") for line in output_ranks_lines], key=keyfunc
     )
     genes_ranked_top = list(next(zip(*output_ranks[:node_rank_max])))
-    # Get subgraph to display from RE
-    re_subgraph(gene_keys, gene_keys2 + genes_ranked_top, reports_path)
+    # Get subgraph to display from RE and save to file
+    graph_metadata = re_subgraph(gene_keys, gene_keys2 + genes_ranked_top, reports_path)
+    report_name = f"kb_rwr_loe_report_{str(uuid.uuid4())}"
+    # Save graph metadata to a file in the report.
+    ws_name = params["workspace_name"]
+    put_graph_metadata(
+        graph_metadata,
+        dict(
+            dfu=dfu,
+            report_name=report_name,
+            reports_path=reports_path,
+            ws_name=ws_name,
+        ),
+    )
+    # create report object
     html_links = [
         {
             "description": "report",
@@ -367,8 +470,8 @@ def run_rwr_loe(config, report):  # pylint: disable=too-many-locals
             "direct_html_link_index": 0,
             "html_links": html_links,
             "message": (f"""Report for RWR_CV with rank <= {node_rank_max}"""),
-            "report_object_name": f"kb_checkv_report_{str(uuid.uuid4())}",
-            "workspace_name": params["workspace_name"],
+            "report_object_name": report_name,
+            "workspace_name": ws_name,
         }
     )
     return {

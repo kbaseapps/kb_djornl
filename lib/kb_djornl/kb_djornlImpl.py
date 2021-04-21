@@ -3,7 +3,9 @@
 import logging
 import os
 
+from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
+
 from . import run, run_rwr_cv, run_rwr_loe
 #END_HEADER
 
@@ -76,11 +78,12 @@ class kb_djornl:
         # return variables are: output
         #BEGIN run_rwr_cv
         report = KBaseReport(self.callback_url, service_ver="dev")
+        dfu = DataFileUtil(self.callback_url)
         config = dict(
             params=params,
             shared=self.shared_folder,
         )
-        output = run_rwr_cv(config, report)
+        output = run_rwr_cv(config, report, dfu)
         #END run_rwr_cv
 
         # At some point might do deeper type checking...
@@ -100,11 +103,12 @@ class kb_djornl:
         # return variables are: output
         #BEGIN run_rwr_loe
         report = KBaseReport(self.callback_url, service_ver="dev")
+        dfu = DataFileUtil(self.callback_url)
         config = dict(
             params=params,
             shared=self.shared_folder,
         )
-        output = run_rwr_loe(config, report)
+        output = run_rwr_loe(config, report, dfu)
         #END run_rwr_loe
 
         # At some point might do deeper type checking...

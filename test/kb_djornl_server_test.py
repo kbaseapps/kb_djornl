@@ -1,12 +1,18 @@
 """ kb_djornl unit tests """
 # -*- coding: utf-8 -*-
+import json
 import os
-import time
 import shutil
+import time
 import unittest
+
 from configparser import ConfigParser
 from pprint import pprint
+from urllib.parse import urlparse
 
+from installed_clients.DataFileUtilClient import (  # pylint: disable=import-error
+    DataFileUtil,
+)
 from installed_clients.WorkspaceClient import Workspace  # pylint: disable=import-error
 
 from kb_djornl.kb_djornlImpl import kb_djornl  # pylint: disable=import-error
@@ -51,11 +57,12 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         )
         cls.wsURL = cls.cfg["workspace-url"]
         cls.wsClient = Workspace(cls.wsURL)
+        cls.callback_url = os.environ["SDK_CALLBACK_URL"]
+        cls.dfu = DataFileUtil(cls.callback_url)
         cls.serviceImpl = kb_djornl(cls.cfg)
         cls.scratch = cls.cfg["scratch"]
-        cls.callback_url = os.environ["SDK_CALLBACK_URL"]
         suffix = int(time.time() * 1000)
-        cls.wsName = "test_ContigFilter_" + str(suffix)
+        cls.wsName = "test_kb_djornl_" + str(suffix)
         ret = cls.wsClient.create_workspace(  # noqa pylint: disable=unused-variable
             {"workspace": cls.wsName}
         )
@@ -117,7 +124,25 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         ref = ret[0]["report_ref"]
         out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
         report = out["data"][0]["data"]
+        # Assert report name is index.html
         self.assertEqual(report["html_links"][0]["name"], "index.html")
+        reports_zip_node_url = urlparse(report["html_links"][0]["URL"])
+        reports_zip_node = reports_zip_node_url.path.split("/")[-1]
+        reports_zip_path = os.path.join(self.scratch, "test/reports.zip")
+        self.dfu.shock_to_file(
+            dict(
+                file_path=reports_zip_path,
+                shock_id=reports_zip_node,
+                unpack="unpack",
+            )
+        )
+        graph_metadata_path = os.path.join(self.scratch, "test/graph-metadata.json")
+        with open(graph_metadata_path) as graph_metadata_file:
+            graph_metadata = json.load(graph_metadata_file)
+        graph_state_ref = graph_metadata["state"]
+        graph_state_obj = self.dfu.get_objects({"object_refs": [graph_state_ref]})
+        graph_state_json = graph_state_obj["data"][0]["data"]["description"]
+        self.assertEqual(graph_state_json, "{}")
 
     def test_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
