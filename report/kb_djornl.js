@@ -127,15 +127,39 @@ const nodeSelectChangeHandlerFactory = (appState) => (evt) => {
 const nodeClickHandler = (evt) => {
   console.log(evt.target.data().name); // eslint-disable-line no-console
 };
+/* Determine workspace id. */
+const getWorkspaceId = () => {
+  const loc = new URL(window.location.href);
+  // In development use localStorage to store worskapce id.
+  if (loc.hostname === 'localhost') {
+    const wsidStored = localStorage.getItem('wsid');
+    if (wsidStored) {
+      return wsidStored;
+    }
+    const wsidPrompted = prompt('Use which workspace for state?');
+    localStorage.setItem('wsid', wsidPrompted);
+    return wsidPrompted;
+  }
+  /* This is coupled to the KBase HTMLFileSetServ api v1 URL specification.
+   * See the [HTMLFileSetServ][repo] for details:
+   * [repo]: https://github.com/kbaseapps/HTMLFileSetServ
+   */
+  return loc.pathname.split('/')[5];
+};
 /* metadata checks */
 const loadMetadata = async () => {
   const metadataResponse = await fetch('graph-metadata.json');
   const metadata = await metadataResponse.json();
   console.log('metadata', metadata); // eslint-disable-line no-console
+  const wsid = getWorkspaceId();
+  /* The version below is a placeholder that is eventually replaced with the
+   * latest version.
+   */
+  const ref = `${wsid}/${metadata.objid}/1`;
   return {
     nodesMeta: metadata.nodes,
     edgesMeta: metadata.edges,
-    stateWSRef: metadata.state,
+    stateWSRef: ref,
     wsurl: metadata.wsurl,
   };
 };
@@ -242,7 +266,12 @@ const loadManifestAndGraph = async (wof) => {
   const elementsResponse = await fetch('graph.json');
   let { nodes, edges } = await elementsResponse.json(); // eslint-disable-line prefer-const
   /* Currently, the workspace object stores only nodes and their positions. */
-  const storedNodes = await wof.getStoredNodes();
+  let storedNodes = [];
+  try {
+    storedNodes = await wof.getStoredNodes();
+  } catch (err) {
+    console.error('There was an error retrieving stored state.'); // eslint-disable-line no-console
+  }
   let layout = true;
   if (storedNodes.length === nodes.length) {
     nodes = storedNodes;

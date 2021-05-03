@@ -139,7 +139,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_metadata_path = os.path.join(self.scratch, "test/graph-metadata.json")
         with open(graph_metadata_path) as graph_metadata_file:
             graph_metadata = json.load(graph_metadata_file)
-        graph_state_ref = graph_metadata["state"]
+        graph_state_objid = graph_metadata["objid"]
+        graph_state_ref = f"{self.wsName}/{graph_state_objid}"
         graph_state_obj = self.dfu.get_objects({"object_refs": [graph_state_ref]})
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")

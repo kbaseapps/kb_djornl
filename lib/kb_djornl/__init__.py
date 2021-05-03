@@ -51,11 +51,6 @@ def genes_to_rwr_tsv(genes):
     return "".join([f"report\t{gene}\n" for gene in genes])
 
 
-def get_object_ref(object_info_dict):
-    """ Format an object ref from a KBase object info dictionary. """
-    return "{wsid}/{objid}/{ver}".format(**object_info_dict)
-
-
 def get_wsurl():
     """ Get the workspace url for this environment. """
     config_file = os.environ.get("KB_DEPLOYMENT_CONFIG")
@@ -123,9 +118,9 @@ def put_graph_metadata(metadata, config):
         ],
     }
     report_state = dfu.save_objects(report_state_params)
-    report_state_ref = get_object_ref(object_info_as_dict(report_state[0]))
+    report_state_objid = object_info_as_dict(report_state[0])["objid"]
     # add extra metadata
-    metadata["state"] = report_state_ref
+    metadata["objid"] = report_state_objid
     metadata["wsurl"] = get_wsurl()
     # save metadata
     metadata_path = os.path.join(reports_path, "graph-metadata.json")

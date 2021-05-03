@@ -45,6 +45,5 @@ module.exports = {
   devServer: {
     contentBase: path.join(__dirname, 'test_local/workdir/tmp/reports'),
     host: 'localhost',
-    open: true,
   },
 };
