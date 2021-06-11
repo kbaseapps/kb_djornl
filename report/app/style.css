@@ -316,6 +316,55 @@ ul._tippy input[type=checkbox] + label span.alt {
   padding: 0;
 }
 
+#state-save {
+  background: #c6dbeedd;
+  border-bottom: 3px solid #000;
+  display: flex;
+  height: 50px;
+  justify-content: space-between;
+  padding-left: 12%;
+  padding-right: 12%;
+  position: fixed;
+  width: 100%;
+  z-index: 4;
+}
+
+#state-save form {
+  align-items: center;
+  display: flex;
+  justify-content: space-around;
+  max-width: 76%;
+}
+
+#state-save form select, #state-save form input {
+  font-size: 200%;
+  max-width: 33%;
+  min-width: 200px;
+}
+
+#state-save button {
+  background: var(--frost_blue);
+  border-radius: 8px;
+  font-size: 200%;
+  padding: 4px;
+  transition: all .1s ease-in;
+}
+
+#state-save button[disabled] {
+  opacity: .5;
+  transition: all .1s ease-in;
+}
+
+#state-save #go-top {
+  background: var(--frost_blue);
+  border-color: #000;
+  border-style: none dashed;
+  border-width: 1px;
+  color: #000;
+  font-size: 200%;
+  padding: 0 1em;
+}
+
 .blur {
   filter: blur(5px);
 }

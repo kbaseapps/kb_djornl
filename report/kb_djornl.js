@@ -184,6 +184,27 @@ const cytoscapeLayout = {
   },
   padding: 100,
 };
+/* state saving mechanism chrome */
+const registerStateSaveChrome = (nav) => {
+  nav.childNodes[1].onsubmit = (evt) => evt.preventDefault();
+  document.getElementById('go-top').onclick = () => window.scrollTo(0, 0);
+  const buttonSave = nav.querySelector('#state-save-button');
+  const inputName = nav.querySelector('#state-name');
+  const selectState = nav.querySelector('#state-select');
+  buttonSave.addEventListener('click', () => {
+    console.log(inputName.value); // eslint-disable-line no-console
+    inputName.value = '';
+    buttonSave.disabled = 'disabled';
+  });
+  inputName.addEventListener('input', (evt) => {
+    buttonSave.disabled = '';
+    if (evt.target.value) return;
+    buttonSave.disabled = 'disabled';
+  });
+  selectState.addEventListener('change', (evt) => {
+    console.log(evt.target.value); // eslint-disable-line no-console
+  });
+};
 /* main screen turn on */
 const main = ({ appState }) => {
   const {
@@ -227,6 +248,10 @@ const main = ({ appState }) => {
   if (!initialized) {
     // Load popper plugin on first render only.
     cytoscape.use(popper);
+    /* register state saving mechanism */
+    registerStateSaveChrome(document.getElementsByTagName('nav')[0]);
+    document.getElementsByTagName('nav')[0].childNodes[1].onsubmit = (evt) =>
+      evt.preventDefault();
   }
   /* Initialize cytoscape instance.  */
   const cyDOM = document.getElementById('cy');
