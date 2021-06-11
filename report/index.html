@@ -7,6 +7,19 @@
  </head>
  <body>
   <div class="container-fluid kb-html-report flow-v">
+    <nav id="state-save" class="flow-h">
+      <form>
+        <select id="state-select">
+          <option>Previous state</option>
+          <option>Original state</option>
+          <option>☃</option>
+          <option>a really obnoxiously named state whose name is really too long</option>
+        </select>
+        <input id="state-name" name="state-name" placeholder="Save as..." type="input" />
+        <button disabled="disabled" id="state-save-button">Save</button>
+      </form>
+      <button id="go-top" title="Scroll to top of document">&#x2912;</button>
+    </nav>
     <div class="flow-h">
       <div id="cy"></div>
       <div id="extra" class="flow-v">
