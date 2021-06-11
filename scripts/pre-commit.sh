@@ -46,10 +46,6 @@ EOF
 fi
 
 # KBase pre-commit linting
-python -m black -v \
-	lib/kb_djornl/__init__.py \
-	scripts/postinstall.py \
-	test
-npm run fix
+CHECK="--check" exec npm run fix
 # If there are whitespace errors, print the offending file names and fail.
 exec git diff-index --check --cached $against --

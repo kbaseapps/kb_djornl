@@ -29,14 +29,14 @@ other module's root directory.
 
 # Contributing
 
-Note: By default the module image uses Python 3.6.7, and these instructions are
+Note: By default the module image uses Python 3.7.0, and these instructions are
 tested with this version, but will probably work with any higher version.
 Follow the following instructions to configure your development environment.
 
 0. Install prerequisites:
     - kb-sdk
     - node >= 14.15.4
-    - python >= 3.6.7
+    - python >= 3.7.0
 1. Make a virtual environment and activate it.
 ```
 python -m venv $VENV
@@ -69,7 +69,7 @@ cp scripts/pre-commit.sh .git/hooks/pre-commit
 
 # Help
 
-You may find the answers to your questions in our
-[FAQ](https://kbase.github.io/kb_sdk_docs/references/questions_and_answers.html)
-or [Troubleshooting
-Guide](https://kbase.github.io/kb_sdk_docs/references/troubleshooting.html).
+You may find the answers to your questions in our [FAQ][kbase-faq] or
+[Troubleshooting Guide](kbase-troubleshooting).
+[kbase-faq]: https://kbase.github.io/kb_sdk_docs/references/questions_and_answers.html
+[kbase-troubleshooting]: https://kbase.github.io/kb_sdk_docs/references/troubleshooting.html
