@@ -19,7 +19,8 @@ import {
   edgeColors,
   edgeScoreScale,
 } from './app/style.js';
-import { WOF } from './app/wof.js';
+import { State } from './app/state.js';
+import { WOF, registerStateSaveChrome } from './app/wof.js';
 /* element data */
 const ColorClassAssigned = {};
 const scaleScore = (score, edgeType) => {
@@ -59,19 +60,6 @@ const annotateNode = (node) => {
   }
   return node;
 };
-/* App state management */
-/* This object deliberately imitates the data model of React. */
-class State {
-  constructor(state, callback) {
-    this.state = state;
-    this.callback = callback;
-  }
-  setState(state) {
-    this.state = { ...this.state, ...state };
-    this.callback(this);
-    return this.state;
-  }
-}
 /* event handlers */
 const layoutChangeHandlerFactory = (appState) => {
   let timer;
@@ -184,27 +172,6 @@ const cytoscapeLayout = {
   },
   padding: 100,
 };
-/* state saving mechanism chrome */
-const registerStateSaveChrome = (nav) => {
-  nav.childNodes[1].onsubmit = (evt) => evt.preventDefault();
-  document.getElementById('go-top').onclick = () => window.scrollTo(0, 0);
-  const buttonSave = nav.querySelector('#state-save-button');
-  const inputName = nav.querySelector('#state-name');
-  const selectState = nav.querySelector('#state-select');
-  buttonSave.addEventListener('click', () => {
-    console.log(inputName.value); // eslint-disable-line no-console
-    inputName.value = '';
-    buttonSave.disabled = 'disabled';
-  });
-  inputName.addEventListener('input', (evt) => {
-    buttonSave.disabled = '';
-    if (evt.target.value) return;
-    buttonSave.disabled = 'disabled';
-  });
-  selectState.addEventListener('change', (evt) => {
-    console.log(evt.target.value); // eslint-disable-line no-console
-  });
-};
 /* main screen turn on */
 const main = ({ appState }) => {
   const {
@@ -250,8 +217,6 @@ const main = ({ appState }) => {
     cytoscape.use(popper);
     /* register state saving mechanism */
     registerStateSaveChrome(document.getElementsByTagName('nav')[0]);
-    document.getElementsByTagName('nav')[0].childNodes[1].onsubmit = (evt) =>
-      evt.preventDefault();
   }
   /* Initialize cytoscape instance.  */
   const cyDOM = document.getElementById('cy');
