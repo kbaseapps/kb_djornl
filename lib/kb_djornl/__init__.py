@@ -4,14 +4,16 @@ import configparser
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import uuid
 
+import pandas as pd
 import yaml
 
 from relation_engine_client import REClient
 
-DATA_ROOT = "/opt/work/exascale_data/"
+DATA_ROOT = os.environ.get("KBDJORNL_DATA_ROOT") or "/data/exascale_data/"
 
 re_client = REClient(
     "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
@@ -24,13 +26,8 @@ def cytoscape_node(node, seed=False):
         id=node["_id"],
         geneSymbol=node.get("gene_symbol", ""),
         GOTerms=node.get("go_terms", []),
-        mapmanBin=node.get("mapman_bin", ""),
-        mapmanName=node.get("mapman_name", ""),
-        mapman=dict(
-            bin=node.get("mapman_bin", ""),
-            desc=node.get("mapman_desc"),
-            name=node.get("mapman_name"),
-        ),
+        transcripts=node.get("transcripts", []),
+        mapmanInfos=node.get("mapman_infos", {}),
         seed=seed,
     )
 
@@ -59,9 +56,19 @@ def get_wsurl():
     return config_p["kb_djornl"]["workspace-url"]
 
 
+def load_manifest():
+    """ Load the manifest yaml file """
+    manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
+    with open(manifest_path) as manifest_file:
+        manifest = yaml.safe_load(manifest_file)
+    return manifest
+
+
 def normalized_node_id(node_id):
     """ normalize node id """
-    return node_id.split("/")[1]
+    if "/" in node_id:
+        return node_id.split("/")[1]
+    return node_id
 
 
 def object_info_as_dict(object_info):
@@ -128,7 +135,92 @@ def put_graph_metadata(metadata, config):
         metadata_json.write(json.dumps(metadata))
 
 
-def re_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-locals
+QUERY_EDGE = """SELECT *
+	FROM "{table}"
+	WHERE 1=0
+		OR node1 in {nodes_sql}
+		OR node2 in {nodes_sql}
+"""
+QUERY_NODE = """SELECT *
+	FROM "{table}"
+	WHERE node_id in {nodes_sql}
+"""
+
+
+def query_sqlite(genes):  # pylint: disable=too-many-locals
+    """ Query the data loaded into sqlite3 based on seed genes """
+    networks_path = os.path.join(DATA_ROOT, "networks.db")
+    con = sqlite3.connect(networks_path)
+    manifest = load_manifest()
+    edge_tables = [
+        entry["path"] for entry in manifest["file_list"] if entry["data_type"] == "edge"
+    ]
+    tmpl_id = "djornl_node/{}"
+    edges = []
+    seeds_sql = "".join(('("', '", "'.join(genes), '")'))
+    for edge_table in edge_tables:
+        query_edge = QUERY_EDGE.format(table=edge_table, nodes_sql=seeds_sql)
+        edges_raw = pd.read_sql(query_edge, con).T
+        edges.extend(
+            [
+                dict(
+                    _from=tmpl_id.format(row["node1"]),
+                    _id="djornl_edge/{}".format(
+                        "-".join((row["node1"], row["node2"], row["edge_type"]))
+                    ),
+                    _to=tmpl_id.format(row["node2"]),
+                    score=row["score"],
+                    edge_type=row["edge_type"],
+                )
+                for ix, row in tuple(edges_raw.items())
+            ]
+        )
+    # have to add all nodes from edges here
+    nodes_all = tuple(
+        frozenset(
+            sum(
+                [
+                    (normalized_node_id(edge["_from"]), normalized_node_id(edge["_to"]))
+                    for edge in edges
+                ],
+                (),
+            )
+        )
+    )
+    nodes_sql = "".join(('("', '", "'.join(nodes_all), '")'))
+    query_node = QUERY_NODE.format(table="nodes", nodes_sql=nodes_sql)
+    nodes_raw = pd.read_sql(query_node, con).T
+
+    def cell_raw_process(cell):
+        distinct = sorted(
+            frozenset([json.dumps(item) for item in json.loads(cell) if item])
+        )
+        return [json.loads(item) for item in distinct]
+
+    def node_row_clean(row):
+        return dict(
+            _id=tmpl_id.format(row["node_id"]),
+            gene_symbol=row.get("gene_symbol", "") or "",
+            go_terms=cell_raw_process(row["go_terms"]),
+            mapman_infos=cell_raw_process(row["mapman_infos"]),
+            transcripts=cell_raw_process(row["transcripts"]),
+        )
+
+    def node_shadow(node_id):
+        return dict(
+            _id=tmpl_id.format(node_id),
+            mapman_infos=[],
+        )
+
+    nodes_data = {
+        row["node_id"]: node_row_clean(row) for ix, row in tuple(nodes_raw.items())
+    }
+
+    nodes = [nodes_data.get(node_id, node_shadow(node_id)) for node_id in nodes_all]
+    return [nodes, edges]
+
+
+def re_subgraph(seeds, genes_top, output_path):
     """
     This function writes graph output
     get re output using djornl_fetch_genes stored query with distance 1
@@ -136,11 +228,7 @@ def re_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-loca
     # get re output using djornl_fetch_genes stored query with distance 1
     genes = set(seeds + genes_top)
     seeds_set = frozenset(seeds)
-    response = re_client.stored_query(
-        "djornl_fetch_genes", dict(gene_keys=list(genes), distance=1)
-    )
-    nodes_raw = response["results"][0]["nodes"]
-    edges_raw = response["results"][0]["edges"]
+    nodes_raw, edges_raw = query_sqlite(genes)
     # filter stored query for seed nodes (gene_keys) and ranked nodes
     nodes = [node for node in nodes_raw if normalized_node_id(node["_id"]) in genes]
     edges = [
@@ -186,9 +274,7 @@ def run(config, report):  # pylint: disable=too-many-locals
         os.path.join(reports_path),
     )
     # manifest
-    manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
-    with open(manifest_path) as manifest_file:
-        manifest = yaml.safe_load(manifest_file)
+    manifest = load_manifest()
     manifest_json_path = os.path.join(reports_path, "manifest.json")
     with open(manifest_json_path, "w") as manifest_json:
         manifest_json.write(json.dumps(manifest))
@@ -258,9 +344,7 @@ def run_rwr_cv(
     # include javascript app assets in report
     shutil.copytree("/opt/work/build/", reports_path)
     # manifest
-    manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
-    with open(manifest_path) as manifest_file:
-        manifest = yaml.safe_load(manifest_file)
+    manifest = load_manifest()
     manifest_json_path = os.path.join(reports_path, "manifest.json")
     with open(manifest_json_path, "w") as manifest_json:
         manifest_json.write(json.dumps(manifest))
@@ -290,7 +374,7 @@ def run_rwr_cv(
                 --modname='report'
                 --numranked='1'
                 --outdir='/opt/work/tmp'
-                --verbose='TRUE'
+                --verbose
     """
     subprocess.run(
         "/kb/module/scripts/rwrtools-run.sh".split(" "),
@@ -369,9 +453,7 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
     # include javascript app assets in report
     shutil.copytree("/opt/work/build/", reports_path)
     # manifest
-    manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
-    with open(manifest_path) as manifest_file:
-        manifest = yaml.safe_load(manifest_file)
+    manifest = load_manifest()
     manifest_json_path = os.path.join(reports_path, "manifest.json")
     with open(manifest_json_path, "w") as manifest_json:
         manifest_json.write(json.dumps(manifest))
@@ -407,18 +489,17 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
                 --modname=''
                 --numranked='1'
                 --outdir='/opt/work/tmp'
-                --verbose='TRUE'
+                --verbose
     """
     subprocess.run(
-        "/kb/module/scripts/rwrtools-run.sh".split(" "),
+        ["/kb/module/scripts/rwrtools-run.sh"],
         check=True,
         env=rwrtools_env,
     )
-    tsv_out_tmpl = "data/RWR-LOE__report__{}ARANET_PEN_PIN-PPI_KNOCKOUT__.ranks.txt"
-    geneset2_filename = ""
+    tsv_out = "data/RWR-LOE__.ranks.tsv"
     if second_geneset:
-        geneset2_filename = "NA__"
-    output_path = os.path.join(reports_path, tsv_out_tmpl.format(geneset2_filename))
+        tsv_out = "data/RWR-LOE_1v2_..ranks.tsv"
+    output_path = os.path.join(reports_path, tsv_out)
     shutil.copytree(
         "/opt/work/tmp/",
         os.path.join(reports_path, "data"),

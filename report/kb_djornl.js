@@ -29,12 +29,14 @@ const scaleScore = (score) => {
 const annotateEdge = (edge) => {
   const colorClass = edgeColorClass(edge.data.edgeType, ColorClassAssigned);
   const [colorBg, colorFg] = edgeColors(edge.data.edgeType);
+  const edgeTypeMeta = edgeMetadata[edge.data.edgeType];
+  const label = edgeTypeMeta && edgeTypeMeta.name;
   edge.data = {
     ...edge.data,
     bg: colorBg,
     className: colorClass,
     fg: colorFg,
-    label: edgeMetadata[edge.data.edgeType].name,
+    label: label,
     scoreRounded: edge.data.score.toFixed(6),
     scoreScaled: scaleScore(edge.data.score),
   };
@@ -272,7 +274,12 @@ const loadManifestAndGraph = async (wof) => {
   } catch (err) {
     console.error('There was an error retrieving stored state.'); // eslint-disable-line no-console
   }
+  const debugMetadata = localStorage.getItem('debug') === 'true';
   let layout = true;
+  if (debugMetadata) {
+    console.log('debugMetadata', debugMetadata); //eslint-disable-line no-console
+    return [edges, layout, manifest, nodes];
+  }
   if (storedNodes.length === nodes.length) {
     nodes = storedNodes;
     layout = false;

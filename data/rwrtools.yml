@@ -5,18 +5,18 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - igraph
-  - jupyter
-  - mpi4py
-  - r
-  - r-biocmanager
-  - r-data.table
-  - r-doparallel
-  - r-dplyr
-  - r-foreach
+  - igraph=0.9
+  - jupyter=1.0.0
+  - mpi4py=3.0
+  - r=4
+  - r-biocmanager=1.30
+  - r-data.table=1.14
+  - r-doparallel=1.0
+  - r-dplyr=1.0
+  - r-foreach=1.5
   - r-igraph=1.2.5
-  - r-irkernel
-  - r-optparse
-  - r-patchwork
-  - r-precrec
-  - r-tidyverse
+  - r-irkernel=1.1
+  - r-optparse=1.6
+  - r-patchwork=1.1
+  - r-precrec=0.12
+  - r-tidyverse=1.3

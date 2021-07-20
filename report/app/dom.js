@@ -12,6 +12,7 @@ const componentCheckboxCollect = ({ node }) => {
   collectBox.type = 'checkbox';
   collectBox.id = `collect-${id}`;
   collectBox.name = collectBox.id;
+  collectBox.classList.add('control');
   collectBox.checked = node.data().collected || false;
   collectBox.onchange = (evt) => {
     const checked = evt.target.checked;
@@ -35,6 +36,7 @@ const componentCheckboxSelect = ({ node }) => {
   selectBox.type = 'checkbox';
   selectBox.id = `select-${id}`;
   selectBox.name = selectBox.id;
+  selectBox.classList.add('control');
   selectBox.checked = node.selected();
   selectBox.onchange = (evt) => {
     const checked = evt.target.checked;
@@ -53,19 +55,25 @@ const componentCheckboxSelect = ({ node }) => {
   selectDiv.appendChild(selectLabel);
   return selectDiv;
 };
-const componentCellGOTerms = ({ terms }) => {
+const componentCellListItems = ({ items }) => {
   const ul = document.createElement('ul');
-  terms.forEach((term) => {
+  items.forEach((term) => {
     const ili = document.createElement('li');
     ili.append(document.createTextNode(term));
     ul.append(ili);
   });
   return ul;
 };
-const componentCellMapman = ({ bin, desc, name }) => {
+const componentCellMapman = ({ bin, name }) => {
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  const nonce = Math.round(1e6 * Math.random()).toString(36);
+  const temporaryId = `${bin}-${name}-${nonce}`;
+  checkbox.id = temporaryId;
+  const label = document.createElement('label');
+  label.setAttribute('for', temporaryId);
   // wbr indicates a possible word break, allowing Mapman names to wrap.
   const wbr = () => document.createElement('wbr');
-  const div = document.createElement('div');
   let displayName = [];
   if (name) {
     displayName = name
@@ -73,9 +81,38 @@ const componentCellMapman = ({ bin, desc, name }) => {
       .flatMap((part) => [document.createTextNode(`${part}.`), wbr()]);
   }
   const displayBin = document.createTextNode(bin ? `(${bin}) ` : '');
-  const displayDesc = document.createTextNode(desc ? `: ${desc}` : '');
-  const elements = [displayBin, ...displayName, displayDesc];
-  elements.forEach((elt) => div.appendChild(elt));
+  const span = document.createElement('span');
+  const spanBin = span.cloneNode();
+  spanBin.classList.add('bin');
+  spanBin.appendChild(displayBin);
+  const spanName = span.cloneNode();
+  spanName.classList.add('name');
+  displayName.forEach((part) => spanName.appendChild(part));
+  const elements = [spanBin, spanName];
+  elements.forEach((elt) => label.appendChild(elt));
+  const div = document.createElement('div');
+  div.classList.add('data');
+  div.appendChild(checkbox);
+  div.appendChild(label);
+  return div;
+};
+const componentCellMapmanInfos = ({ infos }) => {
+  const mapmans = {};
+  infos.forEach((info) => {
+    if (info.bin in mapmans) return;
+    mapmans[info.bin] = info.name;
+  });
+
+  const ul = document.createElement('ul');
+  Object.entries(mapmans).forEach(([bin, name]) => {
+    const ili = document.createElement('li');
+    const mapmanDiv = componentCellMapman({ bin, name });
+    ili.append(mapmanDiv);
+    ul.append(ili);
+  });
+  const div = document.createElement('div');
+  div.appendChild(ul);
+  div.classList.add('ui');
   return div;
 };
 const componentCellName = ({ name }) => {
@@ -122,7 +159,8 @@ export const componentMessageLoading = () => {
 };
 const componentNetworkTippy = ({ edgeTypeMeta, edgemani }) => {
   const contentTippy = document.createElement('span');
-  const description = edgemani[edgeTypeMeta.title].description;
+  const edgemaniObj = edgemani[edgeTypeMeta.title];
+  const description = (edgemaniObj && edgemaniObj.description) || '';
   const citation = document.createTextNode(`${edgeTypeMeta.title}: ${description} [`);
   const link = document.createElement('a');
   link.href = edgeTypeMeta.cite;
@@ -161,7 +199,16 @@ const componentNetworkZone = ({
         return [file.title, file];
       })
   );
-  const edgeTypeMeta = edgeMetadata[edgeType];
+  const edgeTypeMetaDefault = (edgeType) => {
+    const unknown = `Unknown edge type: ${edgeType}`;
+    edgemani[unknown] = { description: 'unknown' };
+    return {
+      cite: '#',
+      name: unknown,
+      title: unknown,
+    };
+  };
+  const edgeTypeMeta = edgeMetadata[edgeType] || edgeTypeMetaDefault(edgeType);
   const edgeTypeName = edgeTypeMeta.name;
   const label = document.createElement('label');
   const li = document.createElement('li');
@@ -199,6 +246,9 @@ const componentTableRow = ({ cells, tag }) => {
   cells.forEach((cell) => {
     const td = document.createElement(tagName);
     td.appendChild(cell);
+    if (cell.classList) {
+      [...cell.classList].forEach((cls) => td.classList.add(cls));
+    }
     tr.appendChild(td);
   });
   return tr;
@@ -215,16 +265,13 @@ const componentTippyGeneSymbol = ({ geneSymbol }) => {
 const componentTippyGOTerms = ({ terms }) => {
   if (!terms.length) return;
   const li = componentTextItem({ text: 'GO Terms: ' });
-  li.appendChild(componentCellGOTerms({ terms }));
+  li.appendChild(componentCellListItems({ items: terms }));
   return li;
 };
-const componentTippyMapman = ({ bin, desc, name }) => {
-  if (!bin) return;
+const componentTippyMapmanInfos = ({ infos }) => {
   const li = componentTextItem({ text: 'Mapman: ' });
-  const abbr = document.createElement('abbr');
-  abbr.appendChild(document.createTextNode(bin));
-  abbr.title = name + (desc ? `: ${desc}` : '');
-  li.appendChild(abbr);
+  const mapmanDiv = componentCellMapmanInfos({ infos });
+  li.appendChild(mapmanDiv);
   return li;
 };
 export const componentTippy = ({ data }) => {
@@ -233,7 +280,7 @@ export const componentTippy = ({ data }) => {
   const tippyItems = [
     componentTippyGeneSymbol({ geneSymbol: data.geneSymbol }),
     componentTippyGOTerms({ terms: data.GOTerms }),
-    componentTippyMapman(data.mapman),
+    componentTippyMapmanInfos({ infos: data.mapmanInfos }),
   ].filter((item) => item);
   tippyItems.forEach((item) => ul.appendChild(item));
   return ul;
@@ -322,8 +369,9 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   const columnsDisplayed = [
     'name',
     'geneSymbol',
+    'transcripts',
     'GOTerms',
-    'mapman',
+    'mapmanInfos',
     '_selected',
     '_collected',
   ];
@@ -352,11 +400,9 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   const columnsNode = {
     geneSymbol: 'Gene symbol',
     GOTerms: 'GO terms',
-    mapman: 'Mapman data',
-    mapmanBin: 'Mapman bin',
-    mapmanDesc: 'Mapman description',
-    mapmanName: 'Mapman name',
+    mapmanInfos: 'Mapman bins',
     name: 'Name',
+    transcripts: 'Transcripts',
   };
   const sortIconAsc = 'fa-sort-up';
   const sortIconDesc = 'fa-sort-down';
@@ -394,8 +440,9 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   table.appendChild(headers);
   // node data rows
   const tableDataFormat = {
-    GOTerms: (terms) => componentCellGOTerms({ terms }),
-    mapman: ({ bin, desc, name }) => componentCellMapman({ bin, desc, name }),
+    GOTerms: (items) => componentCellListItems({ items }),
+    mapmanInfos: (infos) => componentCellMapmanInfos({ infos }),
+    transcripts: (items) => componentCellListItems({ items }),
     name: (name) => componentCellName({ name }),
   };
   const sortedNodes = cy.nodes().sort(sortFn);

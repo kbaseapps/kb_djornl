@@ -19,14 +19,6 @@ RUN apt-get install -y nodejs
 COPY ./package.json /kb/module/package.json
 RUN NO_POSTINSTALL=true npm install --production
 RUN npm install webpack-cli webpack
-# Retrieve static data exascale_data
-RUN git clone --depth 1 \
-    https://github.com/kbase/exascale_data.git \
-    /opt/work/exascale_data
-# Retrieve static data relation engine
-RUN git clone --depth 1 \
-    https://github.com/kbase/relation_engine.git \
-    /opt/work/relation_engine
 # Retrieve RWR tools and data
 # RUN git clone --depth 1 \
 #     https://github.com/dkainer/RWRtools.git \

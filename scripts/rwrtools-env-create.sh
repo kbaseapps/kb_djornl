@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -x
+set -e
 
 source /miniconda/etc/profile.d/conda.sh
 conda env create -vv -f ./data/rwrtools.yml

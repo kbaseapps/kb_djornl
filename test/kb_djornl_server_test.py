@@ -113,12 +113,20 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             self.ctx,
             {
                 "workspace_name": self.wsName,
+                # classic test
                 "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                 "node_rank_max": "10",
                 "method": "kfold",
                 "folds": "6",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
+                # test for shadow gene ATCG00680
+                # "gene_keys": (
+                #     "ATCG00280 AT1G01100 AT1G18590 "
+                #     "AT1G74100 AT2G27720 AT5G51545 "
+                #     "AT4G00810 ATCG00350"
+                # ),
+                # "node_rank_max": "100",
             },
         )
         ref = ret[0]["report_ref"]

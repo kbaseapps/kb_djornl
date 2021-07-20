@@ -51,6 +51,10 @@ ul._tippy {
   padding-inline-start: 0;
 }
 
+ul._tippy input {
+  display: none;
+}
+
 #cy {
   border: 1px solid #000;
   border-radius: 4px;
@@ -147,22 +151,52 @@ ul._tippy {
   width: 100%;
 }
 
+#node-data div.data, #node-data .data label {
+  height: auto;
+  width: auto;
+}
+
+#node-data .data label span {
+  text-align: center;
+}
+
+#node-data .data input[type=checkbox]:checked + label span.bin {
+  display: none;
+}
+
+#node-data .data input[type=checkbox]:checked + label span.name {
+  display: inherit;
+  font-family: monospace;
+}
+
+#node-data .data input[type=checkbox] + label span.name {
+  display: none;
+}
+
 #node-data div {
   display: inline-block;
   width: 100%;
   height: 100%;
 }
 
+#node-data div.ui ul {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  height: 100%;
+  justify-content: center;
+}
+
 #node-data input[type=checkbox] {
   display: none;
 }
 
-#node-data input[type=checkbox] + label::before {
+#node-data input[type=checkbox].control + label::before {
   font: normal normal normal 36px/1 FontAwesome;
   content: "\f204"
 }
 
-#node-data input[type=checkbox]:checked + label::before {
+#node-data input[type=checkbox].control:checked + label::before {
   content: "\f205";
 }
 
@@ -187,7 +221,7 @@ ul._tippy {
 }
 
 #node-data li:last-child:before {
-  content: " and ";
+  content: "\A0 and ";
 }
 
 #node-data li:first-child:before {

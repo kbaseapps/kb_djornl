@@ -176,4 +176,34 @@ export const edgeMetadata = {
     name: 'ATRM',
     title: 'ATRM TF to Target LitCurated 01082020 TranscriptionFactorToGene',
   },
+  GO: {
+    cite: '#GO',
+    name: 'GO',
+    title:
+      'GeneA connects to GeneB if the two genes have semantically similar GO terms (with a similarity score > 0). This network is used to evaluate other networks for biological functional content. DOI: [TODO]',
+  },
+  Knockout: {
+    cite: '#Knockout',
+    name: 'Knockout',
+    title:
+      'GeneA connects to GeneB if the phenotypic effect of knocking out GeneA is similar to the phenotypic effect of knocking out GeneB. Similarity is based on Phenotype Ontology semantic similarity. DOI: https://doi.org/10.1186/s13007-015-0053-y',
+  },
+  'Metabolic-AraCyc': {
+    cite: '#Metabolic-AraCyc',
+    name: 'Metabolic-AraCyc',
+    title:
+      'GeneA connects to GeneB if they are both enzymes and are linked by a common substrate or product. E.g. RXNA (GeneA) → Compound1 → RXNB (GeneB). Here GeneA connects to GeneB due to Compound1. DOI: [TODO]',
+  },
+  'PPI-6merged': {
+    cite: '#PPI-6merged',
+    name: 'PPI-6merged',
+    title:
+      'GeneA connects to GeneB if their protein products have been shown to bind to interact with each other, typically through experimental evidence. The PPI-6merged network is the union of 6 different A.thaliana PPI networks: AraNet2 LC, AraNet2 HT, AraPPInet2 0.60, BIOGRID 4.3.194 physical, AtPIN, Mentha. These 6 were all relatively high scoring with GOintersect. DOI: [TODO]',
+  },
+  'Regulation-ATRM': {
+    cite: '#Regulation-ATRM',
+    name: 'Regulation-ATRM',
+    title:
+      'GeneA connects to GeneB if GeneA is a Transcription Factor (TF) that is shown to interact with GeneB (which may or may not be a TF). This dataset contains literature mined and manually curated TF regulatory interactions for A.thaliana. Started from 1701 TFs from PlantTFDB 2.0 and retrieved 4663 TF-associated interactions. These were manually filtered (e.g. FPs, PPI interactions removed). They then added some from other sources. Final result is 1431 confirmed TF regulatory interactions, of which 637 are TF-TF. Data origin: http://atrm.cbi.pku.edu.cn/download.php DOI: [TODO]',
+  },
 };
