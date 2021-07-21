@@ -55,6 +55,51 @@ const componentCheckboxSelect = ({ node }) => {
   selectDiv.appendChild(selectLabel);
   return selectDiv;
 };
+const componentCellGO = ({ term, description }) => {
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  const nonce = Math.round(1e6 * Math.random()).toString(36);
+  const temporaryId = `${term}-${nonce}`;
+  checkbox.id = temporaryId;
+  const label = document.createElement('label');
+  label.setAttribute('for', temporaryId);
+  const termNode = document.createTextNode(term);
+  const span = document.createElement('span');
+  const spanTerm = span.cloneNode();
+  spanTerm.classList.add('term');
+  spanTerm.classList.add('alt');
+  spanTerm.appendChild(termNode);
+  const spanDescription = span.cloneNode();
+  spanDescription.classList.add('main');
+  spanDescription.classList.add('description');
+  const descriptionNode = document.createTextNode(description);
+  spanDescription.appendChild(descriptionNode);
+  const elements = [spanTerm, spanDescription];
+  elements.forEach((elt) => label.appendChild(elt));
+  const div = document.createElement('div');
+  div.classList.add('data');
+  div.appendChild(checkbox);
+  div.appendChild(label);
+  return div;
+};
+const componentCellGOInfos = ({ infos }) => {
+  const goterms = {};
+  infos.forEach((info) => {
+    if (info.go_term in goterms) return;
+    goterms[info.go_term] = info.go_description;
+  });
+
+  const ul = document.createElement('ul');
+  Object.entries(goterms).forEach(([term, description]) => {
+    const ili = document.createElement('li');
+    const gotermDiv = componentCellGO({ term, description });
+    ili.append(gotermDiv);
+    ul.append(ili);
+  });
+  const div = document.createElement('div');
+  div.appendChild(ul);
+  return div;
+};
 const componentCellListItems = ({ items }) => {
   const ul = document.createElement('ul');
   items.forEach((term) => {
@@ -84,9 +129,11 @@ const componentCellMapman = ({ bin, name }) => {
   const span = document.createElement('span');
   const spanBin = span.cloneNode();
   spanBin.classList.add('bin');
+  spanBin.classList.add('main');
   spanBin.appendChild(displayBin);
   const spanName = span.cloneNode();
   spanName.classList.add('name');
+  spanName.classList.add('alt');
   displayName.forEach((part) => spanName.appendChild(part));
   const elements = [spanBin, spanName];
   elements.forEach((elt) => label.appendChild(elt));
@@ -112,7 +159,6 @@ const componentCellMapmanInfos = ({ infos }) => {
   });
   const div = document.createElement('div');
   div.appendChild(ul);
-  div.classList.add('ui');
   return div;
 };
 const componentCellName = ({ name }) => {
@@ -369,8 +415,7 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   const columnsDisplayed = [
     'name',
     'geneSymbol',
-    'transcripts',
-    'GOTerms',
+    'GOInfos',
     'mapmanInfos',
     '_selected',
     '_collected',
@@ -399,10 +444,9 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   // header row
   const columnsNode = {
     geneSymbol: 'Gene symbol',
-    GOTerms: 'GO terms',
+    GOInfos: 'GO terms',
     mapmanInfos: 'Mapman bins',
     name: 'Name',
-    transcripts: 'Transcripts',
   };
   const sortIconAsc = 'fa-sort-up';
   const sortIconDesc = 'fa-sort-down';
@@ -440,9 +484,8 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   table.appendChild(headers);
   // node data rows
   const tableDataFormat = {
-    GOTerms: (items) => componentCellListItems({ items }),
+    GOInfos: (infos) => componentCellGOInfos({ infos }),
     mapmanInfos: (infos) => componentCellMapmanInfos({ infos }),
-    transcripts: (items) => componentCellListItems({ items }),
     name: (name) => componentCellName({ name }),
   };
   const sortedNodes = cy.nodes().sort(sortFn);

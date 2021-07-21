@@ -26,6 +26,7 @@ def cytoscape_node(node, seed=False):
         id=node["_id"],
         geneSymbol=node.get("gene_symbol", ""),
         GOTerms=node.get("go_terms", []),
+        GOInfos=node.get("go_infos", []),
         transcripts=node.get("transcripts", []),
         mapmanInfos=node.get("mapman_infos", {}),
         seed=seed,
@@ -202,6 +203,7 @@ def query_sqlite(genes):  # pylint: disable=too-many-locals
             _id=tmpl_id.format(row["node_id"]),
             gene_symbol=row.get("gene_symbol", "") or "",
             go_terms=cell_raw_process(row["go_terms"]),
+            go_infos=cell_raw_process(row["go_infos"]),
             mapman_infos=cell_raw_process(row["mapman_infos"]),
             transcripts=cell_raw_process(row["transcripts"]),
         )

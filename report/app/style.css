@@ -157,19 +157,17 @@ ul._tippy input {
 }
 
 #node-data .data label span {
-  text-align: center;
 }
 
-#node-data .data input[type=checkbox]:checked + label span.bin {
+#node-data .data input[type=checkbox]:checked + label span.main {
   display: none;
 }
 
-#node-data .data input[type=checkbox]:checked + label span.name {
+#node-data .data input[type=checkbox]:checked + label span.alt {
   display: inherit;
-  font-family: monospace;
 }
 
-#node-data .data input[type=checkbox] + label span.name {
+#node-data .data input[type=checkbox] + label span.alt {
   display: none;
 }
 

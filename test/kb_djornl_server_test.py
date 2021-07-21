@@ -80,7 +80,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
 
     # NOTE: According to Python unittest naming rules test method names should
     # start with 'test'.
-    # @unittest.skip("Skip test for debugging")
+    @unittest.skip("Skip test for debugging")
     def test_run_kb_djornl(self):
         """test case"""
         param = """The magic words are `squeamish ossifrage`."""
@@ -114,19 +114,18 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             {
                 "workspace_name": self.wsName,
                 # classic test
-                "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
-                "node_rank_max": "10",
-                "method": "kfold",
-                "folds": "6",
-                "restart": ".8",
-                "tau": ".4,.8,1.2,1.6",
+                # "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                # "node_rank_max": "10",
+                # "method": "kfold",
+                # "folds": "6",
+                # "restart": ".8",
+                # "tau": ".4,.8,1.2,1.6",
                 # test for shadow gene ATCG00680
-                # "gene_keys": (
-                #     "ATCG00280 AT1G01100 AT1G18590 "
-                #     "AT1G74100 AT2G27720 AT5G51545 "
-                #     "AT4G00810 ATCG00350"
-                # ),
-                # "node_rank_max": "100",
+                "gene_keys": (
+                    "ATCG00280 AT1G01100 AT1G18590 AT1G74100"
+                    "AT2G27720 AT5G51545 AT4G00810 ATCG00350"
+                ),
+                "node_rank_max": "100",
             },
         )
         ref = ret[0]["report_ref"]
@@ -153,6 +152,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")
 
+    @unittest.skip("Skip test for debugging")
     def test_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
         ret = self.serviceImpl.run_rwr_loe(
@@ -170,6 +170,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         report = out["data"][0]["data"]
         self.assertEqual(report["html_links"][0]["name"], "index.html")
 
+    @unittest.skip("Skip test for debugging")
     def test_run_rwr_loe_target(self):
         """RWR LOE target test case"""
         ret = self.serviceImpl.run_rwr_loe(
