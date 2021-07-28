@@ -6,7 +6,7 @@ import os
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.KBaseReportClient import KBaseReport
 
-from . import run, run_rwr_cv, run_rwr_loe
+from . import run_rwr_cv, run_rwr_loe
 #END_HEADER
 
 
@@ -27,7 +27,7 @@ class kb_djornl:
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = "git@github.com:kbaseapps/kb_djornl.git"
-    GIT_COMMIT_HASH = "b9407fdd6d3f424209c12af493b529ff9f6a5a91"
+    GIT_COMMIT_HASH = "c15a9bf9294b68e94c01d8c4abfb25340f944b7b"
 
     #BEGIN_CLASS_HEADER
     #END_CLASS_HEADER
@@ -43,30 +43,6 @@ class kb_djornl:
         #END_CONSTRUCTOR
         pass
 
-
-    def run_kb_djornl(self, ctx, params):
-        """
-        :param params: instance of mapping from String to unspecified object
-        :returns: instance of type "ReportResults" -> structure: parameter
-           "report_name" of String, parameter "report_ref" of String
-        """
-        # ctx is the context object
-        # return variables are: output
-        #BEGIN run_kb_djornl
-        report = KBaseReport(self.callback_url, service_ver="dev")
-        config = dict(
-            params=params,
-            shared=self.shared_folder,
-        )
-        output = run(config, report)
-        #END run_kb_djornl
-
-        # At some point might do deeper type checking...
-        if not isinstance(output, dict):
-            raise ValueError('Method run_kb_djornl return value ' +
-                             'output is not type dict as required.')
-        # return the results
-        return [output]
 
     def run_rwr_cv(self, ctx, params):
         """

@@ -8,8 +8,6 @@ module kb_djornl {
         string report_ref;
     } ReportResults;
 
-    funcdef run_kb_djornl(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
-
     funcdef run_rwr_cv(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 
     funcdef run_rwr_loe(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
