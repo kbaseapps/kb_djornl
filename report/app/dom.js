@@ -55,6 +55,50 @@ const componentCheckboxSelect = ({ node }) => {
   selectDiv.appendChild(selectLabel);
   return selectDiv;
 };
+const componentCellGO = ({ term, description, prefix }) => {
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  const checkboxId = `${prefix}-${term}`;
+  checkbox.id = checkboxId;
+  const label = document.createElement('label');
+  label.setAttribute('for', checkboxId);
+  const termNode = document.createTextNode(term);
+  const span = document.createElement('span');
+  const spanTerm = span.cloneNode();
+  spanTerm.classList.add('term');
+  spanTerm.classList.add('alt');
+  spanTerm.appendChild(termNode);
+  const spanDescription = span.cloneNode();
+  spanDescription.classList.add('main');
+  spanDescription.classList.add('description');
+  const descriptionNode = document.createTextNode(description);
+  spanDescription.appendChild(descriptionNode);
+  const elements = [spanTerm, spanDescription];
+  elements.forEach((elt) => label.appendChild(elt));
+  const div = document.createElement('div');
+  div.classList.add('data');
+  div.appendChild(checkbox);
+  div.appendChild(label);
+  return div;
+};
+const componentCellGOInfos = ({ infos, prefix }) => {
+  const goterms = {};
+  infos.forEach((info) => {
+    if (info.term in goterms) return;
+    goterms[info.term] = info.desc;
+  });
+
+  const ul = document.createElement('ul');
+  Object.entries(goterms).forEach(([term, description]) => {
+    const ili = document.createElement('li');
+    const gotermDiv = componentCellGO({ description, term, prefix });
+    ili.append(gotermDiv);
+    ul.append(ili);
+  });
+  const div = document.createElement('div');
+  div.appendChild(ul);
+  return div;
+};
 const componentCellListItems = ({ items }) => {
   const ul = document.createElement('ul');
   items.forEach((term) => {
@@ -64,14 +108,13 @@ const componentCellListItems = ({ items }) => {
   });
   return ul;
 };
-const componentCellMapman = ({ bin, name }) => {
+const componentCellMapman = ({ code, desc, name, prefix }) => {
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
-  const nonce = Math.round(1e6 * Math.random()).toString(36);
-  const temporaryId = `${bin}-${name}-${nonce}`;
-  checkbox.id = temporaryId;
+  const checkboxId = `${prefix}-${code}-${desc}`;
+  checkbox.id = checkboxId;
   const label = document.createElement('label');
-  label.setAttribute('for', temporaryId);
+  label.setAttribute('for', checkboxId);
   // wbr indicates a possible word break, allowing Mapman names to wrap.
   const wbr = () => document.createElement('wbr');
   let displayName = [];
@@ -80,15 +123,19 @@ const componentCellMapman = ({ bin, name }) => {
       .split('.')
       .flatMap((part) => [document.createTextNode(`${part}.`), wbr()]);
   }
-  const displayBin = document.createTextNode(bin ? `(${bin}) ` : '');
   const span = document.createElement('span');
-  const spanBin = span.cloneNode();
-  spanBin.classList.add('bin');
-  spanBin.appendChild(displayBin);
+  const spanDesc = span.cloneNode();
+  spanDesc.classList.add('desc');
+  spanDesc.classList.add('main');
+  spanDesc.appendChild(document.createTextNode(desc));
   const spanName = span.cloneNode();
+  spanName.classList.add('code');
   spanName.classList.add('name');
+  spanName.classList.add('alt');
+  const displayCode = document.createTextNode(code ? `(${code}) ` : '');
+  spanName.appendChild(displayCode);
   displayName.forEach((part) => spanName.appendChild(part));
-  const elements = [spanBin, spanName];
+  const elements = [spanDesc, spanName];
   elements.forEach((elt) => label.appendChild(elt));
   const div = document.createElement('div');
   div.classList.add('data');
@@ -96,23 +143,30 @@ const componentCellMapman = ({ bin, name }) => {
   div.appendChild(label);
   return div;
 };
-const componentCellMapmanInfos = ({ infos }) => {
+const componentCellMapmanInfos = ({ infos, prefix }) => {
   const mapmans = {};
   infos.forEach((info) => {
-    if (info.bin in mapmans) return;
-    mapmans[info.bin] = info.name;
+    if (info.code in mapmans) return;
+    mapmans[info.code] = {
+      desc: info.desc,
+      name: info.name,
+    };
   });
 
   const ul = document.createElement('ul');
-  Object.entries(mapmans).forEach(([bin, name]) => {
+  Object.entries(mapmans).forEach(([code, data]) => {
     const ili = document.createElement('li');
-    const mapmanDiv = componentCellMapman({ bin, name });
+    const mapmanDiv = componentCellMapman({
+      code,
+      prefix,
+      desc: data.desc,
+      name: data.name,
+    });
     ili.append(mapmanDiv);
     ul.append(ili);
   });
   const div = document.createElement('div');
   div.appendChild(ul);
-  div.classList.add('ui');
   return div;
 };
 const componentCellName = ({ name }) => {
@@ -262,25 +316,26 @@ const componentTippyGeneSymbol = ({ geneSymbol }) => {
   if (!geneSymbol) return;
   return componentTextItem({ text: `Gene Symbol: ${geneSymbol}` });
 };
-const componentTippyGOTerms = ({ terms }) => {
-  if (!terms.length) return;
+const componentTippyGOInfos = ({ infos, prefix }) => {
+  if (!infos.length) return;
   const li = componentTextItem({ text: 'GO Terms: ' });
-  li.appendChild(componentCellListItems({ items: terms }));
+  li.appendChild(componentCellGOInfos({ infos, prefix }));
   return li;
 };
-const componentTippyMapmanInfos = ({ infos }) => {
+const componentTippyMapmanInfos = ({ infos, prefix }) => {
   const li = componentTextItem({ text: 'Mapman: ' });
-  const mapmanDiv = componentCellMapmanInfos({ infos });
+  const mapmanDiv = componentCellMapmanInfos({ infos, prefix });
   li.appendChild(mapmanDiv);
   return li;
 };
 export const componentTippy = ({ data }) => {
   const ul = document.createElement('ul');
   ul.classList.add('_tippy');
+  const prefix = `tippy-${data.id}`;
   const tippyItems = [
     componentTippyGeneSymbol({ geneSymbol: data.geneSymbol }),
-    componentTippyGOTerms({ terms: data.GOTerms }),
-    componentTippyMapmanInfos({ infos: data.mapmanInfos }),
+    componentTippyGOInfos({ infos: data.GOInfos, prefix }),
+    componentTippyMapmanInfos({ infos: data.mapmanInfos, prefix }),
   ].filter((item) => item);
   tippyItems.forEach((item) => ul.appendChild(item));
   return ul;
@@ -368,9 +423,11 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   };
   const columnsDisplayed = [
     'name',
-    'geneSymbol',
-    'transcripts',
-    'GOTerms',
+    'defline',
+    'geneSymbols',
+    'names',
+    'KOEffects',
+    'GOInfos',
     'mapmanInfos',
     '_selected',
     '_collected',
@@ -398,11 +455,13 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   };
   // header row
   const columnsNode = {
-    geneSymbol: 'Gene symbol',
-    GOTerms: 'GO terms',
-    mapmanInfos: 'Mapman bins',
-    name: 'Name',
-    transcripts: 'Transcripts',
+    defline: 'Defline',
+    geneSymbols: 'Symbols',
+    GOInfos: 'GO terms',
+    KOEffects: 'KO Effects',
+    mapmanInfos: 'MapMan',
+    names: 'Names',
+    name: 'Gene',
   };
   const sortIconAsc = 'fa-sort-up';
   const sortIconDesc = 'fa-sort-down';
@@ -440,9 +499,11 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   table.appendChild(headers);
   // node data rows
   const tableDataFormat = {
-    GOTerms: (items) => componentCellListItems({ items }),
-    mapmanInfos: (infos) => componentCellMapmanInfos({ infos }),
-    transcripts: (items) => componentCellListItems({ items }),
+    geneSymbols: (items) => componentCellListItems({ items }),
+    GOInfos: (infos, prefix) => componentCellGOInfos({ infos, prefix }),
+    KOEffects: (items) => componentCellListItems({ items }),
+    mapmanInfos: (infos, prefix) => componentCellMapmanInfos({ infos, prefix }),
+    names: (items) => componentCellListItems({ items }),
     name: (name) => componentCellName({ name }),
   };
   const sortedNodes = cy.nodes().sort(sortFn);
@@ -450,9 +511,11 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     const nodeData = columnsDisplayed
       .filter((col) => col in columnsNode)
       .map((col) => {
-        const datum = node.data()[col];
+        const data = node.data();
+        const datum = data[col];
+        const prefix = data.id;
         if (col in tableDataFormat) {
-          return tableDataFormat[col](datum);
+          return tableDataFormat[col](datum, prefix);
         }
         return document.createTextNode(datum);
       });

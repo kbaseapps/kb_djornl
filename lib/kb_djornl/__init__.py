@@ -23,11 +23,13 @@ re_client = REClient(
 def cytoscape_node(node, seed=False):
     """ convert nodedata into cytoscape format """
     return dict(
+        defline=node["defline"],
+        geneSymbols=node["gene_symbols"],
+        GOInfos=node["go_infos"],
         id=node["_id"],
-        geneSymbol=node.get("gene_symbol", ""),
-        GOTerms=node.get("go_terms", []),
-        transcripts=node.get("transcripts", []),
-        mapmanInfos=node.get("mapman_infos", {}),
+        KOEffects=node["ko_effects"],
+        mapmanInfos=node["mapman_infos"],
+        names=node["names"],
         seed=seed,
     )
 
@@ -136,14 +138,14 @@ def put_graph_metadata(metadata, config):
 
 
 QUERY_EDGE = """SELECT *
-	FROM "{table}"
-	WHERE 1=0
-		OR node1 in {nodes_sql}
-		OR node2 in {nodes_sql}
+    FROM "{table}"
+    WHERE 1=0
+        OR node1 in {nodes_sql}
+        OR node2 in {nodes_sql}
 """
-QUERY_NODE = """SELECT *
-	FROM "{table}"
-	WHERE node_id in {nodes_sql}
+QUERY_NODE = """SELECT "GID" as node_id, *
+    FROM nodes
+    WHERE "GID" in {nodes_sql}
 """
 
 
@@ -188,35 +190,55 @@ def query_sqlite(genes):  # pylint: disable=too-many-locals
         )
     )
     nodes_sql = "".join(('("', '", "'.join(nodes_all), '")'))
-    query_node = QUERY_NODE.format(table="nodes", nodes_sql=nodes_sql)
+    query_node = QUERY_NODE.format(nodes_sql=nodes_sql)
     nodes_raw = pd.read_sql(query_node, con).T
 
-    def cell_raw_process(cell):
-        distinct = sorted(
-            frozenset([json.dumps(item) for item in json.loads(cell) if item])
-        )
-        return [json.loads(item) for item in distinct]
-
     def node_row_clean(row):
+        def cell_split(cell):
+            return cell.split("|") if cell else []
+
+        go_infos_raw = zip(cell_split(row["GO"]), cell_split(row["GOdesc"]))
+        go_infos = [dict(term=term, desc=desc) for term, desc in go_infos_raw]
+        mapman_infos_raw = zip(
+            cell_split(row["mapman_code"]),
+            cell_split(row["mapman_name"]),
+            cell_split(row["mapman_desc"]),
+        )
+        mapman_infos = [
+            dict(code=code, desc=desc, name=name)
+            for code, name, desc in mapman_infos_raw
+        ]
+
         return dict(
             _id=tmpl_id.format(row["node_id"]),
-            gene_symbol=row.get("gene_symbol", "") or "",
-            go_terms=cell_raw_process(row["go_terms"]),
-            mapman_infos=cell_raw_process(row["mapman_infos"]),
-            transcripts=cell_raw_process(row["transcripts"]),
+            defline=row["defline"],
+            gene_symbols=cell_split(row["symbols"]),
+            go_infos=go_infos,
+            ko_effects=cell_split(row["KO_effect"]),
+            names=cell_split(row["names"]),
+            mapman_infos=mapman_infos,
         )
 
-    def node_shadow(node_id):
+    def node_shadow(node_id, nodes_data):
+        if node_id not in nodes_data:
+            print(f"MISSING METADATA FOR {node_id}")
         return dict(
             _id=tmpl_id.format(node_id),
+            defline="missing metadata",
+            gene_symbols=[],
+            go_infos=[],
+            ko_effects=[],
+            names=[],
             mapman_infos=[],
         )
 
     nodes_data = {
-        row["node_id"]: node_row_clean(row) for ix, row in tuple(nodes_raw.items())
+        row["GID"]: node_row_clean(row) for ix, row in tuple(nodes_raw.items())
     }
-
-    nodes = [nodes_data.get(node_id, node_shadow(node_id)) for node_id in nodes_all]
+    nodes = [
+        nodes_data.get(node_id, node_shadow(node_id, nodes_data))
+        for node_id in nodes_all
+    ]
     return [nodes, edges]
 
 

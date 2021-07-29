@@ -19,6 +19,8 @@ def download_assets(assets, endpoint, cookies):
         asset_url = endpoint._replace(path=asset).geturl()
         resp = requests.get(asset_url, cookies=cookies)
         print(f"GET {asset}: {resp.status_code}")
+        if resp.status_code > 299:
+            continue
         path = os.path.join(destination_path, asset[1:])
         directory = os.path.dirname(path)
         if not os.path.isdir(directory):

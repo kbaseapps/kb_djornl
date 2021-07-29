@@ -19,6 +19,10 @@ div.kb-html-report .flow-h {
   justify-content: space-around;
 }
 
+div.kb-html-report .flow-h.wide {
+  justify-content: flex-start;
+}
+
 span.message {
   background-color: #fff;
   border-radius: 8px;
@@ -52,6 +56,18 @@ ul._tippy {
 }
 
 ul._tippy input {
+  display: none;
+}
+
+ul._tippy input[type=checkbox]:checked + label span.main {
+  display: none;
+}
+
+ul._tippy input[type=checkbox]:checked + label span.alt {
+  display: inherit;
+}
+
+ul._tippy input[type=checkbox] + label span.alt {
   display: none;
 }
 
@@ -157,19 +173,17 @@ ul._tippy input {
 }
 
 #node-data .data label span {
-  text-align: center;
 }
 
-#node-data .data input[type=checkbox]:checked + label span.bin {
+#node-data .data input[type=checkbox]:checked + label span.main {
   display: none;
 }
 
-#node-data .data input[type=checkbox]:checked + label span.name {
+#node-data .data input[type=checkbox]:checked + label span.alt {
   display: inherit;
-  font-family: monospace;
 }
 
-#node-data .data input[type=checkbox] + label span.name {
+#node-data .data input[type=checkbox] + label span.alt {
   display: none;
 }
 
@@ -212,19 +226,19 @@ ul._tippy input {
   display: inline;
 }
 
-#node-data li:after {
-  content: ", ";
+#node-data li span:after {
+  content: ",\A0";
 }
 
 #node-data li:last-child:after, #node-data li:nth-last-child(2):after {
   content: "";
 }
 
-#node-data li:last-child:before {
-  content: "\A0 and ";
+#node-data li:last-child span:before {
+  content: "\A0 and\A0";
 }
 
-#node-data li:first-child:before {
+#node-data li:first-child span:before, #node-data li:last-child span:after {
   content: "";
 }
 
@@ -232,7 +246,7 @@ ul._tippy input {
   border-left: 1px solid #000;
   height: 100%;
   max-width: 200px;
-  min-width: 100px;
+  min-width: 150px;
   padding: .5em;
 }
 
