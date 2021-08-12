@@ -65,20 +65,29 @@ export const edgeColorClass = (edgeType, assigned = {}) => {
   assigned[edgeType] = colorClass;
   return colorClass;
 };
+const colorFunc = `mapData(rank, 1, 100, ${RAINIER_CHERRY_RED}, #000)`;
 export const cytoscapeStyle = [
   {
     selector: 'node',
     style: {
-      'background-color': FROST_BLUE,
+      'background-color': '#000',
       content: 'data(name)',
+      color: '#fff',
       'font-family': 'Oxygen, Arial, sans-serif',
       'font-size': '1.375em',
       shape: 'round-rectangle',
       'text-halign': 'center',
-      'text-outline-color': FROST_BLUE,
+      'text-outline-color': '#000',
       'text-outline-width': '2px',
       'text-valign': 'center',
       width: '110px',
+    },
+  },
+  {
+    selector: 'node[rank > 0]',
+    style: {
+      'background-color': colorFunc,
+      'text-outline-color': colorFunc,
     },
   },
   {

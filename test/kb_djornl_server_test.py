@@ -157,7 +157,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                     "AT3G17930 AT4G39640 AT5G66190 AT1G23310"
                     "AT5G51820 AT2G39800 AT2G38120 AT2G38170"
                 ),
-                "node_rank_max": "100",
+                "node_rank_max": "200",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
             },

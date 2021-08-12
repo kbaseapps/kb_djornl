@@ -20,7 +20,7 @@ re_client = REClient(
 )
 
 
-def cytoscape_node(node, seed=False):
+def cytoscape_node(node, rank, seed=False):
     """ convert nodedata into cytoscape format """
     return dict(
         defline=node["defline"],
@@ -30,6 +30,7 @@ def cytoscape_node(node, seed=False):
         KOEffects=node["ko_effects"],
         mapmanInfos=node["mapman_infos"],
         names=node["names"],
+        rank=rank,
         seed=seed,
     )
 
@@ -242,16 +243,19 @@ def query_sqlite(genes):  # pylint: disable=too-many-locals
     return [nodes, edges]
 
 
-def re_subgraph(seeds, genes_top, output_path):
+def query_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-locals
     """
-    This function writes graph output
-    get re output using djornl_fetch_genes stored query with distance 1
+    This function queries the data, writes the resulting subgraph and returns a
+    dictionary containing the number of nodes and edges.
+    seeds: list
+    genes_top: dict whose keys are genes and values are their ranks
     """
-    # get re output using djornl_fetch_genes stored query with distance 1
-    genes = set(seeds + genes_top)
+    genes_list = list(genes_top.keys())
+    genes = set(seeds + genes_list)
     seeds_set = frozenset(seeds)
+    # Produce the induced subgraph of genes in all networks.
     nodes_raw, edges_raw = query_sqlite(genes)
-    # filter stored query for seed nodes (gene_keys) and ranked nodes
+    # Only keep the nodes of interest.
     nodes = [node for node in nodes_raw if normalized_node_id(node["_id"]) in genes]
     edges = [
         edge
@@ -262,12 +266,18 @@ def re_subgraph(seeds, genes_top, output_path):
         )
     ]
 
-    def node_is_seed(node_id, seeds):
-        return normalized_node_id(node_id) in seeds
+    def node_is_seed(node_id):
+        return normalized_node_id(node_id) in seeds_set
 
     # graph data
     cytoscape_nodes = [
-        dict(data=cytoscape_node(node, node_is_seed(node["_id"], seeds_set)))
+        dict(
+            data=cytoscape_node(
+                node,
+                genes_top.get(normalized_node_id(node["_id"])),
+                seed=node_is_seed(node["_id"]),
+            )
+        )
         for node in nodes
     ]
     cytoscape_edges = [dict(data=cytoscape_edge(edge)) for edge in edges]
@@ -285,20 +295,19 @@ def re_subgraph(seeds, genes_top, output_path):
     )
 
 
-def run_rwr_cv(
-    config, report, dfu
-):  # pylint: disable=too-many-locals too-many-statements
+def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
     """ run RWR_CV and generate a report """
     params = config.get("params")
     shared = config.get("shared")
     reports_path = os.path.join(shared, "reports")
-    # include javascript app assets in report
+    # Include compiled Javascript app assets in report.
     shutil.copytree("/opt/work/build/", reports_path)
-    # manifest
+    # Load manifest and write to report.
     manifest = load_manifest()
     manifest_json_path = os.path.join(reports_path, "manifest.json")
     with open(manifest_json_path, "w") as manifest_json:
         manifest_json.write(json.dumps(manifest))
+    # Write genes to a file to be used with RWR_CV.
     geneset_path = os.path.join(reports_path, "geneset.tsv")
     gene_keys = params.get("gene_keys", "").split(" ")
     with open(geneset_path, "w") as geneset_file:
@@ -308,7 +317,7 @@ def run_rwr_cv(
     cv_folds = params.get("folds", "5")
     cv_restart = params.get("restart", ".7")
     cv_tau = params.get("tau", "1")
-    # run RWR_CV
+    # Run RWR_CV
     rwrtools_env = dict(os.environ)
     rwrtools_data_path = "/data/RWRtools"
     if os.path.isdir(rwrtools_data_path):
@@ -339,18 +348,19 @@ def run_rwr_cv(
         "/opt/work/tmp/",
         os.path.join(reports_path, "data"),
     )
-    # filter fullranks based on node_rank_max to get ranked nodes
+    # This limit is an upper bound since each fold could potentially have
+    # entirely distinct genes with rank up to node_rank_max.
     fullranks_limit = min(int(cv_folds), len(gene_keys)) * node_rank_max + 1
     with open(fullranks_path) as fullranks_tsv:
         fullranks_head = [next(fullranks_tsv) for i in range(fullranks_limit)]
-    # get re output using djornl_fetch_genes stored query with distance 1
-    genes_ranked_top = [
-        line.split("\t")[0]
+    # Filter fullranks based on node_rank_max to get ranked nodes.
+    genes_ranked_top = {
+        line.split("\t")[0]: int(line.split("\t")[2])
         for line in fullranks_head[1:]
         if int(line.split("\t")[2]) <= node_rank_max
-    ]
-    # Get subgraph to display from RE and save to file
-    graph_metadata = re_subgraph(gene_keys, genes_ranked_top, reports_path)
+    }
+    # Get subgraph to display and save to file.
+    graph_metadata = query_subgraph(gene_keys, genes_ranked_top, reports_path)
     report_name = f"kb_rwr_cv_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
@@ -464,9 +474,14 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
     output_ranks = sorted(
         [line.split("\t") for line in output_ranks_lines], key=keyfunc
     )
+    # This needs to produce a dictionary
     genes_ranked_top = list(next(zip(*output_ranks[:node_rank_max])))
+    genes_other = {genes_ranked_top[i]: i for i in range(node_rank_max)}
+    # Put the target genes into the output
+    for gene in gene_keys2:
+        genes_other[gene] = None
     # Get subgraph to display from RE and save to file
-    graph_metadata = re_subgraph(gene_keys, gene_keys2 + genes_ranked_top, reports_path)
+    graph_metadata = query_subgraph(gene_keys, genes_other, reports_path)
     report_name = f"kb_rwr_loe_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]

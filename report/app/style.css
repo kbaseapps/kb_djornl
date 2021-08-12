@@ -187,6 +187,16 @@ ul._tippy input[type=checkbox] + label span.alt {
   display: none;
 }
 
+#node-data td.rank, #node-data td.seed {
+  min-width: 80px;
+  max-width: 80px;
+}
+
+#node-data span.rank, #node-data span.seed {
+  display: flex;
+  justify-content: space-around;
+}
+
 #node-data div {
   display: inline-block;
   width: 100%;
@@ -242,7 +252,7 @@ ul._tippy input[type=checkbox] + label span.alt {
   content: "";
 }
 
-#node-data td, #node-data th {
+#node-data td {
   border-left: 1px solid #000;
   height: 100%;
   max-width: 200px;
@@ -262,6 +272,9 @@ ul._tippy input[type=checkbox] + label span.alt {
 #node-data th {
   background-color: #def;
   border-bottom: 2px solid #000;
+  border-left: 1px solid #000;
+  height: 100%;
+  padding: .5em;
 }
 
 #node-data th span {

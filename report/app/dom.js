@@ -177,6 +177,26 @@ const componentCellName = ({ name }) => {
   link.appendChild(document.createTextNode(name));
   return link;
 };
+const componentCellRank = ({ rank }) => {
+  const span = document.createElement('span');
+  let content = rank;
+  if (!rank) {
+    content = '';
+  }
+  span.appendChild(document.createTextNode(content));
+  span.classList.add('rank');
+  return span;
+};
+const componentCellSeed = ({ seed }) => {
+  const span = document.createElement('span');
+  const iconTrue = document.createElement('i');
+  iconTrue.classList.add('fa');
+  iconTrue.classList.add('fa-star');
+  const content = seed ? iconTrue : document.createTextNode('');
+  span.appendChild(content);
+  span.classList.add('seed');
+  return span;
+};
 const componentMessage = ({ content }) => {
   const contentNode = document.createTextNode(content);
   const loadingIcon = document.createElement('i');
@@ -423,6 +443,8 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   };
   const columnsDisplayed = [
     'name',
+    'seed',
+    'rank',
     'defline',
     'geneSymbols',
     'names',
@@ -462,6 +484,8 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     mapmanInfos: 'MapMan',
     names: 'Names',
     name: 'Gene',
+    rank: 'Rank',
+    seed: 'Seed',
   };
   const sortIconAsc = 'fa-sort-up';
   const sortIconDesc = 'fa-sort-down';
@@ -505,6 +529,8 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     mapmanInfos: (infos, prefix) => componentCellMapmanInfos({ infos, prefix }),
     names: (items) => componentCellListItems({ items }),
     name: (name) => componentCellName({ name }),
+    rank: (rank) => componentCellRank({ rank }),
+    seed: (seed) => componentCellSeed({ seed }),
   };
   const sortedNodes = cy.nodes().sort(sortFn);
   sortedNodes.forEach((node) => {
