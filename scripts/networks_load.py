@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """ Load network data into a sqlite database """
+import json
 import os
 import sqlite3
 
@@ -45,11 +46,38 @@ def load_nodes(con):
     )
     nodes_df.to_sql("nodes", con, if_exists="replace")
 
+def merge_edge_metadata(manifest):
+    """ Load the edge metadata yaml file """
+    edge_yaml_path = os.path.join(
+        DATA_ROOT, "../relation_engine/spec/datasets/djornl/edge_type.yaml"
+    )
+    edge_metadata = {
+        manifest_file["path"].split("/")[1][:-4]: manifest_file
+        for manifest_file in manifest["file_list"]
+        if manifest_file["data_type"] == "edge"
+    }
+    with open(edge_yaml_path) as edge_yaml_file:
+        edge_yaml = yaml.safe_load(edge_yaml_file)
+    edge_metadata_updates = [
+        edge_metadata.get(edge_type["const"], {}).update({
+            "description_re": edge_type["description"],
+            "title_re": edge_type["title"]
+        })
+        for edge_type in edge_yaml["oneOf"]
+    ]
+    assert len(edge_metadata_updates) == len(edge_yaml["oneOf"])
+    with open(
+        os.path.join(DATA_ROOT, "edge-metadata.json"), "w"
+    ) as edge_metadata_json:
+        json.dump(edge_metadata, edge_metadata_json)
+    return edge_yaml
+
 def main():
     """ Load clusters, edges and nodes into a local sqlite3 db. """
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
         manifest = yaml.safe_load(manifest_file)
+    merge_edge_metadata(manifest)
     # index manifest by nodes, edges and clusters
     manifest_index = {
         "node": [],

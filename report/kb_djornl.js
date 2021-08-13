@@ -17,16 +17,19 @@ import {
   cytoscapeStyle,
   edgeColorClass,
   edgeColors,
-  edgeMetadata,
+  edgeScoreScale,
 } from './app/style.js';
 import { WOF } from './app/wof.js';
 /* element data */
 const ColorClassAssigned = {};
-const scaleScore = (score) => {
-  const scaled = Math.max(Math.round(-10 * Math.log10(1.1 - score)), 2);
+const scaleScore = (score, edgeType) => {
+  if (edgeType in edgeScoreScale) {
+    return edgeScoreScale[edgeType](score);
+  }
+  const scaled = Math.floor(Math.max(Math.round(-10 * Math.log10(1.1 - score)), 2));
   return scaled;
 };
-const annotateEdge = (edge) => {
+const annotateEdgeFactory = (edgeMetadata) => (edge) => {
   const colorClass = edgeColorClass(edge.data.edgeType, ColorClassAssigned);
   const [colorBg, colorFg] = edgeColors(edge.data.edgeType);
   const edgeTypeMeta = edgeMetadata[edge.data.edgeType];
@@ -38,7 +41,7 @@ const annotateEdge = (edge) => {
     fg: colorFg,
     label: label,
     scoreRounded: edge.data.score.toFixed(6),
-    scoreScaled: scaleScore(edge.data.score),
+    scoreScaled: scaleScore(edge.data.score, edge.data.edgeType),
   };
   return edge;
 };
@@ -186,6 +189,7 @@ const main = ({ appState }) => {
   const {
     nodes,
     edges,
+    edgeMetadata,
     initialized,
     layout,
     loading,
@@ -213,8 +217,9 @@ const main = ({ appState }) => {
     return;
   }
   /* Convert graph data to cytoscape format.  */
-  const nodesCytoscape = nodes.map((node) => annotateNode(node));
+  const annotateEdge = annotateEdgeFactory(edgeMetadata);
   const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
+  const nodesCytoscape = nodes.map((node) => annotateNode(node));
   let useLayout = cytoscapeLayout;
   if (!layout) {
     useLayout = { name: 'preset' };
@@ -262,9 +267,11 @@ const main = ({ appState }) => {
   swapElement(table, tableNew);
 };
 // Load manifest, graph and state information from the workspace.
-const loadManifestAndGraph = async (wof) => {
+const loadGraphAssets = async (wof) => {
   const manifestResponse = await fetch('manifest.json');
   const manifest = await manifestResponse.json();
+  const edgeMetadataResponse = await fetch('edge-metadata.json');
+  const edgeMetadata = await edgeMetadataResponse.json();
   const elementsResponse = await fetch('graph.json');
   let { nodes, edges } = await elementsResponse.json(); // eslint-disable-line prefer-const
   /* Currently, the workspace object stores only nodes and their positions. */
@@ -284,14 +291,15 @@ const loadManifestAndGraph = async (wof) => {
     nodes = storedNodes;
     layout = false;
   }
-  return [edges, layout, manifest, nodes];
+  return [edges, edgeMetadata, layout, manifest, nodes];
 };
 // Load graph and workspace data and initialize state.
 const loadAndRenderGraph = async (appState, stateWSRef) => {
   const { wof } = appState.state;
-  const [edges, layout, manifest, nodes] = await loadManifestAndGraph(wof);
+  const [edges, edgeMetadata, layout, manifest, nodes] = await loadGraphAssets(wof);
   appState.setState({
     edges,
+    edgeMetadata,
     layout,
     manifest,
     nodes,
@@ -317,6 +325,7 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     {
       wof,
       edges: [],
+      edgeMetadata: {},
       initialized: false,
       layout: true,
       loading: false,

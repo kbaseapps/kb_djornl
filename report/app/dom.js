@@ -233,11 +233,12 @@ export const componentMessageLoading = () => {
 };
 const componentNetworkTippy = ({ edgeTypeMeta, edgemani }) => {
   const contentTippy = document.createElement('span');
-  const edgemaniObj = edgemani[edgeTypeMeta.title];
+  const title = edgeTypeMeta.title;
+  const edgemaniObj = edgemani[title];
   const description = (edgemaniObj && edgemaniObj.description) || '';
-  const citation = document.createTextNode(`${edgeTypeMeta.title}: ${description} [`);
+  const citation = document.createTextNode(`${title}: ${description} [`);
   const link = document.createElement('a');
-  link.href = edgeTypeMeta.cite;
+  link.href = edgeTypeMeta.cite || `#${title}`;
   link.appendChild(document.createTextNode('citation'));
   contentTippy.appendChild(citation);
   contentTippy.appendChild(link);
@@ -283,7 +284,7 @@ const componentNetworkZone = ({
     };
   };
   const edgeTypeMeta = edgeMetadata[edgeType] || edgeTypeMetaDefault(edgeType);
-  const edgeTypeName = edgeTypeMeta.name;
+  const edgeTypeName = edgeTypeMeta.title || edgeType;
   const label = document.createElement('label');
   const li = document.createElement('li');
   const span = document.createElement('span');

@@ -95,15 +95,15 @@ export const cytoscapeStyle = [
     style: {
       'border-width': 4,
       'border-style': 'solid',
-      'border-color': SPRING_GREEN,
+      'border-color': CYANOBACTERIA_TEAL,
       'border-opacity': 1,
     },
   },
   {
     selector: 'node.highlight',
     style: {
-      'border-color': CYANOBACTERIA_TEAL,
-      'border-width': '8px',
+      'border-color': SPRING_GREEN,
+      'border-width': '64px',
     },
   },
   {
@@ -149,70 +149,11 @@ export const cytoscapeStyle = [
     },
   },
 ];
-export const edgeMetadata = {
-  'phenotype-association_AraGWAS_subnet_permsig_geni': {
-    cite: '#aragwas',
-    name: 'AraGWAS subnet',
-    title: 'AraGWAS phenotype association',
-  },
-  'phenotype-association_GWAS_gene_to_metabolite_10.1371/journal.pgen.1006363': {
-    cite: '#gwasgene',
-    name: 'GWAS gene to metabolite',
-    title: 'AraGWAS subnet permsig geni GeneToPhenotype',
-  },
-  'protein-protein-interaction_AtPIN': {
-    cite: '#atpin',
-    name: 'AtPIN',
-    title: 'AtPIN PPI',
-  },
-  'protein-protein-interaction_Mentha_A_thaliana_3702_040319': {
-    cite: '#mentha',
-    name: 'Mentha A thaliana',
-    title: 'Mentha AT 3702 040319 PPI',
-  },
-  'protein-protein-interaction_biogrid_date/release3.5.188': {
-    cite: '#biogrid',
-    name: 'BIOGrid',
-    title: 'BIOGRID ORGANISM Arabidopsis thaliana Columbia 3.5.188 tab3 PPI',
-  },
-  'protein-protein-interaction_literature_curated_AraNet_v2_subnet': {
-    cite: '#aranet',
-    name: 'AraNet subnet',
-    title: 'AraNetv2 subnet AT-LC PPI',
-  },
-  'transcription-factor-regulatory-interaction_literature_curated_ATRM_01082020': {
-    cite: '#atrm',
-    name: 'ATRM',
-    title: 'ATRM TF to Target LitCurated 01082020 TranscriptionFactorToGene',
-  },
-  GO: {
-    cite: '#GO',
-    name: 'GO',
-    title:
-      'GeneA connects to GeneB if the two genes have semantically similar GO terms (with a similarity score > 0). This network is used to evaluate other networks for biological functional content. DOI: [TODO]',
-  },
-  Knockout: {
-    cite: '#Knockout',
-    name: 'Knockout',
-    title:
-      'GeneA connects to GeneB if the phenotypic effect of knocking out GeneA is similar to the phenotypic effect of knocking out GeneB. Similarity is based on Phenotype Ontology semantic similarity. DOI: https://doi.org/10.1186/s13007-015-0053-y',
-  },
-  'Metabolic-AraCyc': {
-    cite: '#Metabolic-AraCyc',
-    name: 'Metabolic-AraCyc',
-    title:
-      'GeneA connects to GeneB if they are both enzymes and are linked by a common substrate or product. E.g. RXNA (GeneA) → Compound1 → RXNB (GeneB). Here GeneA connects to GeneB due to Compound1. DOI: [TODO]',
-  },
-  'PPI-6merged': {
-    cite: '#PPI-6merged',
-    name: 'PPI-6merged',
-    title:
-      'GeneA connects to GeneB if their protein products have been shown to bind to interact with each other, typically through experimental evidence. The PPI-6merged network is the union of 6 different A.thaliana PPI networks: AraNet2 LC, AraNet2 HT, AraPPInet2 0.60, BIOGRID 4.3.194 physical, AtPIN, Mentha. These 6 were all relatively high scoring with GOintersect. DOI: [TODO]',
-  },
-  'Regulation-ATRM': {
-    cite: '#Regulation-ATRM',
-    name: 'Regulation-ATRM',
-    title:
-      'GeneA connects to GeneB if GeneA is a Transcription Factor (TF) that is shown to interact with GeneB (which may or may not be a TF). This dataset contains literature mined and manually curated TF regulatory interactions for A.thaliana. Started from 1701 TFs from PlantTFDB 2.0 and retrieved 4663 TF-associated interactions. These were manually filtered (e.g. FPs, PPI interactions removed). They then added some from other sources. Final result is 1431 confirmed TF regulatory interactions, of which 637 are TF-TF. Data origin: http://atrm.cbi.pku.edu.cn/download.php DOI: [TODO]',
+export const edgeScoreScale = {
+  'AT-UU-GA-01-AA-01': (score) => {
+    const scoreMin = 6.7;
+    const scoreMax = 29.7;
+    const scaled = (score - scoreMin) / (scoreMax - scoreMin);
+    return 6 * scaled + 4; // eslint-disable-line no-mixed-operators
   },
 };

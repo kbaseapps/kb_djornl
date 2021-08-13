@@ -129,13 +129,20 @@ def put_graph_metadata(metadata, config):
     }
     report_state = dfu.save_objects(report_state_params)
     report_state_objid = object_info_as_dict(report_state[0])["objid"]
-    # add extra metadata
+    # Add extra metadata for the workspace.
     metadata["objid"] = report_state_objid
     metadata["wsurl"] = get_wsurl()
-    # save metadata
+    # Save graph metadata.
     metadata_path = os.path.join(reports_path, "graph-metadata.json")
     with open(metadata_path, "w") as metadata_json:
-        metadata_json.write(json.dumps(metadata))
+        json.dump(metadata, metadata_json)
+    # Copy edge-metadata into the reports directory.
+    edge_metadata_source = os.path.join(DATA_ROOT, "edge-metadata.json")
+    with open(edge_metadata_source) as edge_metadata_json:
+        edge_metadata = json.load(edge_metadata_json)
+    edge_metadata_path = os.path.join(reports_path, "edge-metadata.json")
+    with open(edge_metadata_path, "w") as edge_metadata_json_out:
+        json.dump(edge_metadata, edge_metadata_json_out)
 
 
 QUERY_EDGE = """SELECT *

@@ -4,12 +4,10 @@ set -e
 # Retrieve static data relation engine
 git clone --depth 1 \
     https://github.com/kbase/relation_engine.git \
-    --branch 2021-07-updates \
     /data/relation_engine
 # Retrieve static data exascale_data
 git clone --depth 1 \
     https://github.com/kbase/exascale_data.git \
-    --branch 2021-07-updates \
     /data/exascale_data
 # Validate exascale_data using importers.djornl.parser
 pip install -r /data/relation_engine/requirements.txt
