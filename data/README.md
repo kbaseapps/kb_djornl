@@ -1,11 +1,6 @@
 # data
 
-This directory contains any reference data required for this module to run.
-
-For any reference data that is too large to host on Github (greater than
-100MB), follow the [Reference Data Guide][ref-data-guide] for an alternative.
-
-[ref-data-guide]: https://kbase.github.io/kb_sdk_docs/howtos/work_with_reference_data.html
+This directory contains reference data required for this module to run.
 
 ## rwrtools.yml
 
