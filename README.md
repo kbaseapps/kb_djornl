@@ -201,16 +201,19 @@ cd DataFileUtil
 ```bash
 git clone --branch dev --depth 1 git@github.com:dkainer/RWRtools.git RWRtools.shallow
 ```
-3. Run a `DataFileUtil` container to package and upload the code.
+3. Run `kb-sdk test` to build the DataFileUtil image. You may have to put your
+token in `test_local/test.cfg` and run `kb-sdk test` again if this is the first
+time building the image.
+4. Run a `DataFileUtil` container to package and upload the code.
 ```bash
 docker run -it test/datafileutil bash
 ```
-4. Once in the `DataFileUtil` container run the following commands
+5. Once in the `DataFileUtil` container run the following commands
 ```bash
 cd lib
 ipython
 ```
-5. In the ipython session run the commands below. Set the token to a valid
+6. In the ipython session run the commands below. Set the token to a valid
     token for the environment, here `appdev` is used as an example.
 ```python
 from DataFileUtil.DataFileUtilImpl import DataFileUtil

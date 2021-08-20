@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import subprocess
 import time
 import unittest
 
@@ -65,6 +66,10 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         ret = cls.wsClient.create_workspace(  # noqa pylint: disable=unused-variable
             {"workspace": cls.wsName}
         )
+        with open("../ui/narrative/methods/run_rwr_cv/spec.json") as cv_spec:
+            cls.spec_rwr_cv = json.load(cv_spec)
+        with open("../ui/narrative/methods/run_rwr_loe/spec.json") as loe_spec:
+            cls.spec_rwr_loe = json.load(loe_spec)
 
     @classmethod
     def tearDownClass(cls):
@@ -88,6 +93,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "workspace_name": self.wsName,
                 # classic test
                 "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
                 "method": "kfold",
                 "folds": "6",
@@ -126,6 +132,68 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")
 
+    def test_run_rwr_cv_multiplexes(self):
+        """RWR CV on each available multiplex"""
+        multiplexes = [
+            option["value"]
+            for option in [
+                param
+                for param in self.spec_rwr_cv["parameters"]
+                if param["id"] == "multiplex"
+            ][0]["dropdown_options"]["options"]
+        ]
+        for multiplex in multiplexes:
+            with self.subTest(msg=f"Querying multiplex {multiplex}"):
+                self.setUp()
+                try:
+                    ret = self.serviceImpl.run_rwr_cv(
+                        self.ctx,
+                        {
+                            "workspace_name": self.wsName,
+                            "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                            "multiplex": multiplex,
+                            "node_rank_max": "10",
+                        },
+                    )
+                except subprocess.CalledProcessError:
+                    print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
+                    continue
+                ref = ret[0]["report_ref"]
+                out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
+                report = out["data"][0]["data"]
+                self.assertEqual(report["html_links"][0]["name"], "index.html")
+
+    def test_run_rwr_loe_multiplexes(self):
+        """RWR LOE context_analysis test case"""
+        multiplexes = [
+            option["value"]
+            for option in [
+                param
+                for param in self.spec_rwr_loe["parameters"]
+                if param["id"] == "multiplex"
+            ][0]["dropdown_options"]["options"]
+        ]
+        for multiplex in multiplexes:
+            with self.subTest(msg=f"Querying multiplex {multiplex}"):
+                self.setUp()
+                try:
+                    ret = self.serviceImpl.run_rwr_loe(
+                        self.ctx,
+                        {
+                            "workspace_name": self.wsName,
+                            "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                            "multiplex": multiplex,
+                            "node_rank_max": "10",
+                        },
+                    )
+                except subprocess.CalledProcessError:
+                    print(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
+                    continue
+                ref = ret[0]["report_ref"]
+                out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
+                report = out["data"][0]["data"]
+                self.assertEqual(report["html_links"][0]["name"], "index.html")
+
     def test_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
         ret = self.serviceImpl.run_rwr_loe(
@@ -133,6 +201,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             {
                 "workspace_name": self.wsName,
                 "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
@@ -157,6 +226,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                     "AT3G17930 AT4G39640 AT5G66190 AT1G23310"
                     "AT5G51820 AT2G39800 AT2G38120 AT2G38170"
                 ),
+                "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "200",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",

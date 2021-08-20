@@ -104,7 +104,7 @@ def object_info_as_dict(object_info):
     )
 
 
-def put_graph_metadata(metadata, config):
+def put_graph_metadata(metadata, config):  # pylint: disable=too-many-locals
     """Save graph metadata to a file
     Create a workspace state object.
     """
@@ -319,6 +319,7 @@ def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
     gene_keys = params.get("gene_keys", "").split(" ")
     with open(geneset_path, "w") as geneset_file:
         geneset_file.write(genes_to_rwr_tsv(gene_keys))
+    multiplex = params["multiplex"]
     node_rank_max = int(params.get("node_rank_max", 10))
     cv_method = params.get("method", "kfold")
     cv_folds = params.get("folds", "5")
@@ -332,15 +333,15 @@ def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
     ] = f"""Rscript RWR_CV.R
-                --data='multiplexes/Athal_PPI_KO_PENEX_DOM.Rdata'
+                --data='multiplexes/{multiplex}'
                 --geneset='{geneset_path}'
                 --method='{cv_method}'
                 --folds='{cv_folds}'
                 --restart='{cv_restart}'
                 --tau='{cv_tau}'
-                --modname='report'
                 --numranked='1'
-                --outdir='/opt/work/tmp'
+                --out-fullranks='/opt/work/tmp/fullranks.tsv'
+                --out-medianranks='/opt/work/tmp/medianranks.tsv'
                 --verbose
     """
     subprocess.run(
@@ -348,9 +349,8 @@ def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
         check=True,
         env=rwrtools_env,
     )
-    tsv_out_tmpl = "data/RWR-CV_report_report_ARANET_PEN_PIN-PPI_KNOCKOUT.{}.tsv"
-    fullranks_path = os.path.join(reports_path, tsv_out_tmpl.format("fullranks"))
-    medianranks_path = os.path.join(reports_path, tsv_out_tmpl.format("medianranks"))
+    fullranks_path = os.path.join(reports_path, "data/fullranks.tsv")
+    medianranks_path = os.path.join(reports_path, "data/medianranks.tsv")
     shutil.copytree(
         "/opt/work/tmp/",
         os.path.join(reports_path, "data"),
@@ -438,6 +438,7 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
         with open(geneset2_path, "w") as geneset2_file:
             geneset2_file.write(genes_to_rwr_tsv(gene_keys2))
         second_geneset = f"--geneset2='{geneset2_path}'"
+    multiplex = params["multiplex"]
     node_rank_max = int(params.get("node_rank_max", 10))
     loe_restart = params.get("restart", ".7")
     loe_tau = params.get("tau", "1")
@@ -449,14 +450,13 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
     ] = f"""Rscript RWR_LOE.R
-                --data='multiplexes/Athal_PPI_KO_PENEX_DOM.Rdata'
+                --data='multiplexes/{multiplex}'
                 --geneset1='{geneset_path}'
                 {second_geneset}
                 --restart='{loe_restart}'
                 --tau='{loe_tau}'
-                --modname=''
                 --numranked='1'
-                --outdir='/opt/work/tmp'
+                --out-path='/opt/work/tmp/ranks.tsv'
                 --verbose
     """
     subprocess.run(
@@ -464,9 +464,7 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
         check=True,
         env=rwrtools_env,
     )
-    tsv_out = "data/RWR-LOE__.ranks.tsv"
-    if second_geneset:
-        tsv_out = "data/RWR-LOE_1v2_..ranks.tsv"
+    tsv_out = "data/ranks.tsv"
     output_path = os.path.join(reports_path, tsv_out)
     shutil.copytree(
         "/opt/work/tmp/",

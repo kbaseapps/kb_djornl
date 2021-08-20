@@ -29,6 +29,14 @@ parameters :
             Target Gene Keys
         short-hint : |
             Space separated Gene Keys
+    multiplex:
+        ui-name : |
+            Multiplex
+        short-hint : |
+            Choose a pre-built multiplex network based on types of experimental
+                evidence you would like incorporated in your analysis, such as
+                protein-protein interactions, metabolic reactions, transcription
+                factor regulation, and gene co-expression.
     node_rank_max:
         ui-name : |
             Maximum node rank

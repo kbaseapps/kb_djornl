@@ -18,7 +18,7 @@ PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
 mkdir -p /data/RWRtools
 curl -H "Authorization: OAuth $KB_AUTH_TOKEN " \
   -o /data/RWRtools/RWRtools.tar.gz \
-  https://ci.kbase.us/services/shock-api/node/8c05a5e1-f7b3-4458-ac57-efafc100d141?download_raw
+  https://ci.kbase.us/services/shock-api/node/0481bd3b-14b4-40f9-a585-aee531235edc?download_raw
 cd /data/RWRtools
 tar xzvf RWRtools.tar.gz
 # remove the database file if it exists
