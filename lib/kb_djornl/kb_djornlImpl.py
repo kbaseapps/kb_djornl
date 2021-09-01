@@ -4,6 +4,7 @@ import logging
 import os
 
 from installed_clients.DataFileUtilClient import DataFileUtil
+from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
 from installed_clients.KBaseReportClient import KBaseReport
 
 from . import run_rwr_cv, run_rwr_loe
@@ -53,13 +54,16 @@ class kb_djornl:
         # ctx is the context object
         # return variables are: output
         #BEGIN run_rwr_cv
-        report = KBaseReport(self.callback_url, service_ver="dev")
-        dfu = DataFileUtil(self.callback_url)
+        clients = dict(
+            report=KBaseReport(self.callback_url, service_ver="dev"),
+            dfu=DataFileUtil(self.callback_url),
+            gsu=GenomeSearchUtil(self.callback_url),
+        )
         config = dict(
             params=params,
             shared=self.shared_folder,
         )
-        output = run_rwr_cv(config, report, dfu)
+        output = run_rwr_cv(config, clients)
         #END run_rwr_cv
 
         # At some point might do deeper type checking...
@@ -78,13 +82,16 @@ class kb_djornl:
         # ctx is the context object
         # return variables are: output
         #BEGIN run_rwr_loe
-        report = KBaseReport(self.callback_url, service_ver="dev")
-        dfu = DataFileUtil(self.callback_url)
+        clients = dict(
+            report=KBaseReport(self.callback_url, service_ver="dev"),
+            dfu=DataFileUtil(self.callback_url),
+            gsu=GenomeSearchUtil(self.callback_url),
+        )
         config = dict(
             params=params,
             shared=self.shared_folder,
         )
-        output = run_rwr_loe(config, report, dfu)
+        output = run_rwr_loe(config, clients)
         #END run_rwr_loe
 
         # At some point might do deeper type checking...

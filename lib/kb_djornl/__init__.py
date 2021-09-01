@@ -2,6 +2,7 @@
 
 import configparser
 import json
+import operator
 import os
 import shutil
 import sqlite3
@@ -18,6 +19,50 @@ DATA_ROOT = os.environ.get("KBDJORNL_DATA_ROOT") or "/data/exascale_data/"
 re_client = REClient(
     "https://ci.kbase.us/services/relation_engine_api", os.environ["KB_AUTH_TOKEN"]
 )
+
+
+def create_tair10_featureset(
+    genes, config, dfu, gsu
+):  # pylint: disable=too-many-locals
+    """ Create an Arabidopsis thaliana featureset from a list of genes. """
+    params = config.get("params")
+    workspace_id = params["workspace_id"]
+    genome_ref = "Phytozome_Genomes/Athaliana_TAIR10"
+    genome_features = gsu.search(
+        {
+            "ref": genome_ref,
+            "limit": len(genes),
+            "structured_query": {"$or": [{"feature_id": gene} for gene in genes]},
+            "sort_by": [["feature_id", True]],
+        }
+    )["features"]
+    genes_found = {feature.get("feature_id") for feature in genome_features}
+    genes_matched = [gene for gene in genes_found if gene in genes_found]
+    genes_unmatched = set(genes).difference(genes_found)
+    if len(genes_unmatched) > 0:
+        genes_unmatched_str = ", ".join([gene[0] for gene in genes_unmatched])
+        print(
+            """WARNING: The following genes were not found in the genome: """
+            f"""{genes_unmatched_str}"""
+        )
+    new_feature_set = dict(
+        description=params.get("description", ""),
+        element_ordering=genes_matched,
+        elements={gene: [genome_ref] for gene in genes_matched},
+    )
+    save_objects_params = {
+        "id": workspace_id,
+        "objects": [
+            {
+                "type": "KBaseCollections.FeatureSet",
+                "data": new_feature_set,
+                "name": params["output_name"],
+            }
+        ],
+    }
+    dfu_resp = dfu.save_objects(save_objects_params)[0]
+    featureset_obj_ref = f"{dfu_resp[6]}/{dfu_resp[0]}/{dfu_resp[4]}"
+    return [{"ref": featureset_obj_ref, "description": "Feature Set"}]
 
 
 def cytoscape_node(node, rank, seed=False):
@@ -302,10 +347,13 @@ def query_subgraph(seeds, genes_top, output_path):  # pylint: disable=too-many-l
     )
 
 
-def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
+def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
     """ run RWR_CV and generate a report """
     params = config.get("params")
     shared = config.get("shared")
+    dfu = clients["dfu"]
+    gsu = clients["gsu"]
+    report = clients["report"]
     reports_path = os.path.join(shared, "reports")
     # Include compiled Javascript app assets in report.
     shutil.copytree("/opt/work/build/", reports_path)
@@ -361,13 +409,18 @@ def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
     with open(fullranks_path) as fullranks_tsv:
         fullranks_head = [next(fullranks_tsv) for i in range(fullranks_limit)]
     # Filter fullranks based on node_rank_max to get ranked nodes.
-    genes_ranked_top = {
+    output_ranks = {
         line.split("\t")[0]: int(line.split("\t")[2])
         for line in fullranks_head[1:]
         if int(line.split("\t")[2]) <= node_rank_max
     }
+    # Create a featureset object with these genes.
+    genes_ranked_top = list(
+        next(zip(*sorted(output_ranks.items(), key=operator.itemgetter(1))))
+    )
+    create_tair10_featureset(genes_ranked_top, config, dfu, gsu)
     # Get subgraph to display and save to file.
-    graph_metadata = query_subgraph(gene_keys, genes_ranked_top, reports_path)
+    graph_metadata = query_subgraph(gene_keys, output_ranks, reports_path)
     report_name = f"kb_rwr_cv_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
@@ -413,10 +466,15 @@ def run_rwr_cv(config, report, dfu):  # pylint: disable=too-many-locals
     }
 
 
-def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
+def run_rwr_loe(
+    config, clients
+):  # pylint: disable=too-many-locals, too-many-statements
     """ run RWR_LOE and generate a report """
     params = config.get("params")
     shared = config.get("shared")
+    dfu = clients["dfu"]
+    gsu = clients["gsu"]
+    report = clients["report"]
     reports_path = os.path.join(shared, "reports")
     # include javascript app assets in report
     shutil.copytree("/opt/work/build/", reports_path)
@@ -473,19 +531,21 @@ def run_rwr_loe(config, report, dfu):  # pylint: disable=too-many-locals
     with open(output_path) as output_tsv:
         output_ranks_lines = output_tsv.readlines()
 
-    def keyfunc(item):
-        return int(item[2]) if item[2].isdecimal() else float("inf")
-
-    output_ranks = sorted(
-        [line.split("\t") for line in output_ranks_lines], key=keyfunc
+    output_ranks = {
+        line.split("\t")[0]: int(line.split("\t")[2])
+        for line in output_ranks_lines[1:]
+        if int(line.split("\t")[2]) <= node_rank_max
+    }
+    # Create a featureset object with these genes.
+    genes_ranked_top = list(
+        next(zip(*sorted(output_ranks.items(), key=operator.itemgetter(1))))
     )
-    # This needs to produce a dictionary
-    genes_ranked_top = list(next(zip(*output_ranks[:node_rank_max])))
+    create_tair10_featureset(genes_ranked_top, config, dfu, gsu)
     genes_other = {genes_ranked_top[i]: i for i in range(node_rank_max)}
     # Put the target genes into the output
     for gene in gene_keys2:
         genes_other[gene] = None
-    # Get subgraph to display from RE and save to file
+    # Get subgraph to display and save to file.
     graph_metadata = query_subgraph(gene_keys, genes_other, reports_path)
     report_name = f"kb_rwr_loe_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.

@@ -97,6 +97,29 @@
             }
         },
         {
+            "id" : "output_name",
+            "optional" : false,
+            "advanced" : false,
+            "allow_multiple" : false,
+            "default_values" : [ "RankedGenes" ],
+            "field_type" : "text",
+            "text_options" : {
+              "valid_ws_types" : [ "KBaseCollections.FeatureSet" ],
+              "is_output_name":true
+             }
+        },
+        {
+            "id" : "description",
+            "optional" : true,
+            "advanced" : false,
+            "allow_multiple" : false,
+            "default_values" : [ "" ],
+            "field_type" : "textarea",
+            "textarea_options" : {
+            "n_rows" : 2
+            }
+        },
+        {
             "id": "method",
             "optional": false,
             "advanced": true,
@@ -179,6 +202,14 @@
                 {
                     "input_parameter": "node_rank_max",
                     "target_property": "node_rank_max"
+                },
+                {
+                    "input_parameter": "output_name",
+                    "target_property": "output_name"
+                },
+                {
+                    "input_parameter": "description",
+                    "target_property": "description"
                 },
                 {
                     "input_parameter": "method",

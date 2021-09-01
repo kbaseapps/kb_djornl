@@ -63,9 +63,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         cls.scratch = cls.cfg["scratch"]
         suffix = int(time.time() * 1000)
         cls.wsName = "test_kb_djornl_" + str(suffix)
-        ret = cls.wsClient.create_workspace(  # noqa pylint: disable=unused-variable
-            {"workspace": cls.wsName}
-        )
+        ret = cls.wsClient.create_workspace({"workspace": cls.wsName})
+        cls.workspace_id = ret[0]
         with open("../ui/narrative/methods/run_rwr_cv/spec.json") as cv_spec:
             cls.spec_rwr_cv = json.load(cv_spec)
         with open("../ui/narrative/methods/run_rwr_loe/spec.json") as loe_spec:
@@ -90,11 +89,13 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         ret = self.serviceImpl.run_rwr_cv(
             self.ctx,
             {
+                "workspace_id": self.workspace_id,
                 "workspace_name": self.wsName,
                 # classic test
                 "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
+                "output_name": "genesMatched",
                 "method": "kfold",
                 "folds": "6",
                 "restart": ".8",
@@ -149,10 +150,12 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                     ret = self.serviceImpl.run_rwr_cv(
                         self.ctx,
                         {
+                            "workspace_id": self.workspace_id,
                             "workspace_name": self.wsName,
                             "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                             "multiplex": multiplex,
                             "node_rank_max": "10",
+                            "output_name": f"genesMatched-{multiplex[:5]}",
                         },
                     )
                 except subprocess.CalledProcessError:
@@ -181,9 +184,11 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                         self.ctx,
                         {
                             "workspace_name": self.wsName,
+                            "workspace_id": self.workspace_id,
                             "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                             "multiplex": multiplex,
                             "node_rank_max": "10",
+                            "output_name": f"genesMatched-{multiplex[:5]}",
                         },
                     )
                 except subprocess.CalledProcessError:
@@ -200,9 +205,11 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             self.ctx,
             {
                 "workspace_name": self.wsName,
+                "workspace_id": self.workspace_id,
                 "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
+                "output_name": "genesMatched",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
             },
@@ -217,6 +224,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         ret = self.serviceImpl.run_rwr_loe(
             self.ctx,
             {
+                "workspace_id": self.workspace_id,
                 "workspace_name": self.wsName,
                 "gene_keys": (
                     "AT2G39990 AT4G24240 AT5G02820 AT1G15550"
@@ -228,6 +236,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 ),
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "200",
+                "output_name": "genesMatched",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
             },
