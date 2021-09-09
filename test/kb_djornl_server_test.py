@@ -15,6 +15,7 @@ from installed_clients.DataFileUtilClient import (  # pylint: disable=import-err
 )
 from installed_clients.WorkspaceClient import Workspace  # pylint: disable=import-error
 
+from kb_djornl.utils import fork_rwr_cv, fork_rwr_loe  # pylint: disable=import-error
 from kb_djornl.kb_djornlImpl import kb_djornl  # pylint: disable=import-error
 from kb_djornl.kb_djornlServer import MethodContext  # pylint: disable=import-error
 from kb_djornl.authclient import (  # pylint: disable=import-error,no-name-in-module
@@ -61,6 +62,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         cls.dfu = DataFileUtil(cls.callback_url)
         cls.serviceImpl = kb_djornl(cls.cfg)
         cls.scratch = cls.cfg["scratch"]
+        cls.reports_path = os.path.join(cls.scratch, "reports")
         suffix = int(time.time() * 1000)
         cls.wsName = "test_kb_djornl_" + str(suffix)
         ret = cls.wsClient.create_workspace({"workspace": cls.wsName})
@@ -79,12 +81,51 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
     def setUp(self):
         """ remove report dir before each test"""
         # the scratch dir is named shared in kb_djornlImpl
-        shutil.rmtree(os.path.join(self.scratch, "reports"), ignore_errors=True)
+        shutil.rmtree(self.reports_path, ignore_errors=True)
 
-    # NOTE: According to Python unittest naming rules test method names should
-    # start with 'test'.
+    def _get_multiplex_params(self, multiplex):
+        """ Make parameters for RWR_CV and RWR_LOE mutliplex tests """
+        return {
+            "workspace_id": self.workspace_id,
+            "workspace_name": self.wsName,
+            "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+            "multiplex": multiplex,
+            "node_rank_max": "10",
+            "output_name": f"genesMatched-{multiplex[:5]}",
+        }
+
+    """
+    NOTE: According to Python unittest naming rules test method names should
+    start with 'test'. The numbers determine the order for the tests. Tests
+    with the same number may be run in any order. From the official unittest
+    documentation:
+    > The order in which the various tests will be run is determined by sorting
+    > the test method names with respect to the built-in ordering for strings.
+    """
     # @unittest.skip("Skip test for debugging")
-    def test_run_rwr_cv(self):
+    def test_00_rwr_cv_multiplexes(self):
+        """Run RWR CV on each available multiplex"""
+        multiplexes = [
+            option["value"]
+            for option in [
+                param
+                for param in self.spec_rwr_cv["parameters"]
+                if param["id"] == "multiplex"
+            ][0]["dropdown_options"]["options"]
+        ]
+
+        for multiplex in multiplexes:
+            with self.subTest(msg=f"Querying multiplex {multiplex}"):
+                self.setUp()
+                os.makedirs(self.reports_path, exist_ok=True)
+                params = self._get_multiplex_params(multiplex)
+                try:
+                    fork_rwr_cv(self.reports_path, params)
+                except subprocess.CalledProcessError:
+                    print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
+                    continue
+
+    def test_01_run_rwr_cv(self):
         """RWR CV test case"""
         ret = self.serviceImpl.run_rwr_cv(
             self.ctx,
@@ -133,41 +174,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")
 
-    def test_run_rwr_cv_multiplexes(self):
-        """RWR CV on each available multiplex"""
-        multiplexes = [
-            option["value"]
-            for option in [
-                param
-                for param in self.spec_rwr_cv["parameters"]
-                if param["id"] == "multiplex"
-            ][0]["dropdown_options"]["options"]
-        ]
-        for multiplex in multiplexes:
-            with self.subTest(msg=f"Querying multiplex {multiplex}"):
-                self.setUp()
-                try:
-                    ret = self.serviceImpl.run_rwr_cv(
-                        self.ctx,
-                        {
-                            "workspace_id": self.workspace_id,
-                            "workspace_name": self.wsName,
-                            "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
-                            "multiplex": multiplex,
-                            "node_rank_max": "10",
-                            "output_name": f"genesMatched-{multiplex[:5]}",
-                        },
-                    )
-                except subprocess.CalledProcessError:
-                    print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
-                    continue
-                ref = ret[0]["report_ref"]
-                out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
-                report = out["data"][0]["data"]
-                self.assertEqual(report["html_links"][0]["name"], "index.html")
-
-    def test_run_rwr_loe_multiplexes(self):
-        """RWR LOE context_analysis test case"""
+    def test_00_run_rwr_loe_multiplexes(self):
+        """Run RWR LOE on each available multiplex"""
         multiplexes = [
             option["value"]
             for option in [
@@ -179,27 +187,15 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         for multiplex in multiplexes:
             with self.subTest(msg=f"Querying multiplex {multiplex}"):
                 self.setUp()
+                os.makedirs(self.reports_path, exist_ok=True)
+                params = self._get_multiplex_params(multiplex)
                 try:
-                    ret = self.serviceImpl.run_rwr_loe(
-                        self.ctx,
-                        {
-                            "workspace_name": self.wsName,
-                            "workspace_id": self.workspace_id,
-                            "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
-                            "multiplex": multiplex,
-                            "node_rank_max": "10",
-                            "output_name": f"genesMatched-{multiplex[:5]}",
-                        },
-                    )
+                    fork_rwr_loe(self.reports_path, params)
                 except subprocess.CalledProcessError:
                     print(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
                     continue
-                ref = ret[0]["report_ref"]
-                out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
-                report = out["data"][0]["data"]
-                self.assertEqual(report["html_links"][0]["name"], "index.html")
 
-    def test_run_rwr_loe_context_analysis(self):
+    def test_01_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
         ret = self.serviceImpl.run_rwr_loe(
             self.ctx,
@@ -219,7 +215,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         report = out["data"][0]["data"]
         self.assertEqual(report["html_links"][0]["name"], "index.html")
 
-    def test_run_rwr_loe_target(self):
+    def test_01_run_rwr_loe_target(self):
         """RWR LOE target test case"""
         ret = self.serviceImpl.run_rwr_loe(
             self.ctx,

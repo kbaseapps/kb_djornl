@@ -23,5 +23,6 @@ echo "$JS_FILES" | xargs eslint $FIX --max-warnings=0
 
 python -m black $CHECK -v \
 	lib/kb_djornl/__init__.py \
+	lib/kb_djornl/utils.py \
 	scripts/postinstall.py \
 	test
