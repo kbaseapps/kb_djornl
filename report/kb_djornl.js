@@ -76,7 +76,7 @@ class State {
 const layoutChangeHandlerFactory = (appState) => {
   let timer;
   const { wof } = appState.state;
-  const updateAfter = 250; // how long to wait before updating position state
+  const updateAfter = 1000; // how long to wait before updating position state
   return (evt) => {
     const update = async () => {
       appState.setState({ loading: true });
