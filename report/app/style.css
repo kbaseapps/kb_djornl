@@ -187,7 +187,12 @@ ul._tippy input[type=checkbox] + label span.alt {
   display: none;
 }
 
-#node-data td.rank, #node-data td.seed {
+#node-data td.mapman {
+  min-width: 300px;
+  max-width: 300px;
+}
+
+#node-data td.rank, #node-data td.seed, #node-data td.symbols {
   min-width: 80px;
   max-width: 80px;
 }

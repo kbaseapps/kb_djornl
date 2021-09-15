@@ -99,8 +99,11 @@ const componentCellGOInfos = ({ infos, prefix }) => {
   div.appendChild(ul);
   return div;
 };
-const componentCellListItems = ({ items }) => {
+const componentCellListItems = ({ classes, items }) => {
   const ul = document.createElement('ul');
+  if (classes) {
+    classes.forEach((cls) => ul.classList.add(cls));
+  }
   items.forEach((term) => {
     const ili = document.createElement('li');
     ili.append(document.createTextNode(term));
@@ -166,6 +169,7 @@ const componentCellMapmanInfos = ({ infos, prefix }) => {
     ul.append(ili);
   });
   const div = document.createElement('div');
+  div.classList.add('mapman');
   div.appendChild(ul);
   return div;
 };
@@ -524,7 +528,7 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   table.appendChild(headers);
   // node data rows
   const tableDataFormat = {
-    geneSymbols: (items) => componentCellListItems({ items }),
+    geneSymbols: (items) => componentCellListItems({ classes: ['symbols'], items }),
     GOInfos: (infos, prefix) => componentCellGOInfos({ infos, prefix }),
     KOEffects: (items) => componentCellListItems({ items }),
     mapmanInfos: (infos, prefix) => componentCellMapmanInfos({ infos, prefix }),
