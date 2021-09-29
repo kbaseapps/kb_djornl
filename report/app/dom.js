@@ -1,5 +1,6 @@
 import tippy, { sticky } from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
+import { computeTable, sortStateParse } from './table.js';
 
 /* components */
 /* In this module, the signature of a component is
@@ -183,9 +184,9 @@ const componentCellName = ({ name }) => {
 };
 const componentCellRank = ({ rank }) => {
   const span = document.createElement('span');
-  let content = rank;
-  if (!rank) {
-    content = '';
+  let content = '';
+  if (rank === 0 || rank) {
+    content = rank;
   }
   span.appendChild(document.createTextNode(content));
   span.classList.add('rank');
@@ -219,8 +220,8 @@ export const componentMessageAcknowledge = ({ message, callback }) => {
   div.id = 'messages';
   const messageNode = document.createTextNode(message);
   const ackButton = document.createElement('button');
-  ackButton.appendChild(document.createTextNode('OK'));
   ackButton.addEventListener('click', callback);
+  ackButton.appendChild(document.createTextNode('OK'));
   const span = document.createElement('span');
   span.classList.add('message');
   span.appendChild(messageNode);
@@ -323,12 +324,12 @@ const componentTableRow = ({ cells, tag }) => {
   if (tag) tagName = tag;
   const tr = document.createElement('tr');
   cells.forEach((cell) => {
-    const td = document.createElement(tagName);
-    td.appendChild(cell);
+    const tableCell = document.createElement(tagName);
+    tableCell.appendChild(cell);
     if (cell.classList) {
-      [...cell.classList].forEach((cls) => td.classList.add(cls));
+      [...cell.classList].forEach((cls) => tableCell.classList.add(cls));
     }
-    tr.appendChild(td);
+    tr.appendChild(tableCell);
   });
   return tr;
 };
@@ -432,9 +433,8 @@ export const swapElement = (original, replacement) => {
 export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) => {
   if (!table) return table;
   const { sort } = appState.state;
-  // node-data selection/collection table
+  // Collect nodes from cytoscape instance
   const cy = cytoscapeInstance;
-  [...table.childNodes].forEach((childNode) => childNode.remove());
   const selectedNodes = cy.nodes().filter((node) => node.selected());
   const collectedNodes = cy.nodes().filter((node) => node.data().collected);
   const displayedNodes = [...collectedNodes.add(selectedNodes)];
@@ -442,10 +442,13 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
   collectedNodes.forEach((node) => node.addClass('collected'));
   const firstNode = cy.nodes()[0];
   if (!firstNode) return;
-  const columnsExtra = {
-    _selected: 'Selected',
-    _collected: 'Collected',
-  };
+  // Get current sort state.
+  let sortState = sort;
+  if (!sortState) {
+    sortState = table.dataset.sort || 'selected';
+  }
+  table.dataset.sort = sortState;
+  // Set column metatdata.
   const columnsDisplayed = [
     'name',
     'seed',
@@ -459,28 +462,10 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     '_selected',
     '_collected',
   ];
-  // sort
-  let sortState = sort;
-  if (!sortState) {
-    sortState = table.dataset.sort || 'selected';
-  }
-  table.dataset.sort = sortState;
-  let sortReverse = 1;
-  let sortOn = sortState;
-  if (sortState.startsWith('-')) {
-    sortOn = sortState.slice(1);
-    sortReverse = -sortReverse;
-  }
-  const sortFn = (node1, node2) => {
-    const node1Val = node1.data()[sortOn];
-    const node2Val = node2.data()[sortOn];
-    const gt = Number(node1Val > node2Val);
-    const eq = Number(node1Val == node2Val);
-    // flip the sort for extra columns
-    const flip = sortOn in columnsExtra ? 1 : -1;
-    return flip * sortReverse * (-1 + eq + 2 * gt); // eslint-disable-line no-mixed-operators
+  const columnsExtra = {
+    _selected: 'Selected',
+    _collected: 'Collected',
   };
-  // header row
   const columnsNode = {
     defline: 'Defline',
     geneSymbols: 'Symbols',
@@ -492,31 +477,40 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     rank: 'Rank',
     seed: 'Seed',
   };
+  // Compute data to display:
+  const tableData = computeTable({
+    columnsDisplayed,
+    columnsExtra,
+    columnsNode,
+    sortState,
+    nodes: cy.nodes(),
+  });
+  /* With more time, what follows could be made more straightforward. */
   const sortIconAsc = 'fa-sort-up';
   const sortIconDesc = 'fa-sort-down';
-  const columnsTitles = columnsDisplayed.map((col) => {
-    let title = col;
-    let icon = 'fa-sort';
-    let colSort = col;
-    if (col in columnsNode) {
-      title = columnsNode[col];
-    }
-    if (col in columnsExtra) {
-      title = columnsExtra[col];
-      colSort = col.slice(1);
-    }
-    if (colSort === sortOn) {
-      icon = sortReverse > 0 ? sortIconAsc : sortIconDesc;
-    }
+  /* Make a <th /> for each header. */
+  const columnsTitles = tableData.headers.map((col) => {
+    const { column, sort, sortable, title } = col;
     const span = document.createElement('span');
+    span.classList.add(column);
     span.appendChild(document.createTextNode(title));
-    const sortControl = document.createElement('i');
-    sortControl.classList.add('fa');
-    sortControl.classList.add(icon);
-    span.appendChild(sortControl);
+    /* Sort icon */
+    if (sortable) {
+      let icon = 'fa-sort';
+      if (sort) {
+        icon = sort > 0 ? sortIconAsc : sortIconDesc;
+      }
+      const sortControl = document.createElement('i');
+      sortControl.classList.add('fa');
+      sortControl.classList.add(icon);
+      span.appendChild(sortControl);
+    }
+    const sortStateParsed = sortStateParse({ sortState });
+    const sortOn = sortStateParsed.sortOn;
+    let sortReverse = sortStateParsed.sortReverse;
     span.onclick = () => {
-      let sortNew = colSort;
-      if (sortOn === colSort) {
+      let sortNew = column;
+      if (sortOn === column) {
         sortReverse = -sortReverse;
         sortNew = sortReverse === 1 ? sortOn : `-${sortOn}`;
       }
@@ -524,53 +518,54 @@ export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) =
     };
     return span;
   });
+  // Remove all rows from the table DOM element.
+  [...table.childNodes].forEach((childNode) => childNode.remove());
   const headers = componentTableRow({ cells: columnsTitles, tag: 'th' });
   table.appendChild(headers);
   // node data rows
   const tableDataFormat = {
-    geneSymbols: (items) => componentCellListItems({ classes: ['symbols'], items }),
-    GOInfos: (infos, prefix) => componentCellGOInfos({ infos, prefix }),
-    KOEffects: (items) => componentCellListItems({ items }),
-    mapmanInfos: (infos, prefix) => componentCellMapmanInfos({ infos, prefix }),
-    names: (items) => componentCellListItems({ items }),
-    name: (name) => componentCellName({ name }),
-    rank: (rank) => componentCellRank({ rank }),
-    seed: (seed) => componentCellSeed({ seed }),
+    geneSymbols: ({ classes, items }) => componentCellListItems({ classes, items }),
+    GOInfos: ({ infos, prefix }) => componentCellGOInfos({ infos, prefix }),
+    KOEffects: ({ items }) => componentCellListItems({ items }),
+    mapmanInfos: ({ infos, prefix }) => componentCellMapmanInfos({ infos, prefix }),
+    names: ({ items }) => componentCellListItems({ items }),
+    name: ({ name }) => componentCellName({ name }),
+    rank: ({ rank }) => componentCellRank({ rank }),
+    seed: ({ seed }) => componentCellSeed({ seed }),
   };
-  const sortedNodes = cy.nodes().sort(sortFn);
-  sortedNodes.forEach((node) => {
-    const nodeData = columnsDisplayed
+  tableData.rows.forEach((row) => {
+    const rowData = columnsDisplayed
       .filter((col) => col in columnsNode)
-      .map((col) => {
-        const data = node.data();
-        const datum = data[col];
-        const prefix = data.id;
+      .map((col, ix) => {
+        const data = row[ix];
         if (col in tableDataFormat) {
-          return tableDataFormat[col](datum, prefix);
+          return tableDataFormat[col](data[col]);
         }
-        return document.createTextNode(datum);
+        return document.createTextNode(data[col].value);
       });
-    const row = componentTableRow({ cells: nodeData });
-    const nodesInterface = [
+    const rowDOM = componentTableRow({ cells: rowData });
+    const { node } = row.slice(-1)[0];
+    rowDOM.id = node.data().id;
+    const rowInterface = [
       componentCheckboxSelect({ node }),
       componentCheckboxCollect({ node }),
     ];
-    nodesInterface.forEach((elt) => {
+    rowInterface.forEach((elt) => {
       const td = document.createElement('td');
       td.classList.add('ui');
       td.appendChild(elt);
-      row.appendChild(td);
+      rowDOM.appendChild(td);
     });
     if (node.data().id === highlight) {
-      row.classList.add('highlight');
+      rowDOM.classList.add('highlight');
     }
-    row.onmouseover = () => {
+    rowDOM.onmouseover = () => {
       node.addClass('highlight');
     };
-    row.onmouseleave = () => {
+    rowDOM.onmouseleave = () => {
       node.removeClass('highlight');
     };
-    table.appendChild(row);
+    table.appendChild(rowDOM);
   });
   return table;
 };
