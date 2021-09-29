@@ -59,6 +59,21 @@ const annotateNode = (node) => {
   }
   return node;
 };
+/* App render management */
+class Renderer {
+  constructor(render, updateRate) {
+    this.updateLast = new Date(0);
+    this.updateRate = updateRate;
+    this.updateTimer = null;
+    this.render = render;
+  }
+  requestRender(...args) {
+    // ideally only render on animation frames
+    // but render management needs more sophistication
+    clearTimeout(this.updateTimer);
+    this.updateTimer = setTimeout(() => this.render(...args), this.updateRate);
+  }
+}
 /* App state management */
 /* This object deliberately imitates the data model of React. */
 class State {
@@ -118,19 +133,21 @@ const nodeSelectChangeHandlerFactory = (appState) => (evt) => {
     nodeTippy.show();
     highlight = id;
   }
-  // render the table to update selections
-  const table = document.getElementById('node-data');
-  // TODO: fix sort
-  const tableNew = renderTable({
-    table,
-    cytoscapeInstance: evt.cy,
-    highlight,
-    appState,
-  });
-  swapElement(table, tableNew);
+  appState.setState({ highlight });
 };
 const nodeClickHandler = (evt) => {
   console.log(evt.target.data().name); // eslint-disable-line no-console
+};
+const nodeMouseoutHandlerFactory = (appState) => (evt) => {
+  const { highlight } = appState.state;
+  const nodeId = evt.target.data().id;
+  if (nodeId === highlight) return;
+  const rowNode = document.getElementById(nodeId);
+  rowNode.classList.remove('highlight');
+};
+const nodeMouseoverHandler = (evt) => {
+  const rowNode = document.getElementById(evt.target.data().id);
+  rowNode.classList.add('highlight');
 };
 /* Determine workspace id. */
 const getWorkspaceId = () => {
@@ -190,7 +207,7 @@ const main = ({ appState }) => {
     nodes,
     edges,
     edgeMetadata,
-    initialized,
+    highlight,
     layout,
     loading,
     manifest,
@@ -214,6 +231,7 @@ const main = ({ appState }) => {
       callback: messageCallback,
     });
     swapElement(messages, messageContainer);
+    messageContainer.querySelectorAll('button')[0].focus();
     return;
   }
   /* Convert graph data to cytoscape format.  */
@@ -224,33 +242,39 @@ const main = ({ appState }) => {
   if (!layout) {
     useLayout = { name: 'preset' };
   }
-  if (!initialized) {
-    // Load popper plugin on first render only.
-    cytoscape.use(popper);
-  }
+  window.cytoscape = cytoscape;
+  window.popper = popper;
   /* Initialize cytoscape instance.  */
   const cyDOM = document.getElementById('cy');
-  const cy = cytoscape({
-    container: cyDOM,
-    elements: { nodes: nodesCytoscape, edges: edgesCytoscape },
-    layout: useLayout,
-    maxZoom: 10,
-    minZoom: 1 / 10,
-    style: cytoscapeStyle,
-    zoom: 4,
-  });
-  // Instantiate and register event handlers.
-  const layoutChangeHandler = layoutChangeHandlerFactory(appState);
-  const nodeSelectChangeHandler = nodeSelectChangeHandlerFactory(appState);
-  cy.nodes().on('click', nodeClickHandler);
-  cy.nodes().on('position', layoutChangeHandler);
-  cy.nodes().on('select', nodeSelectChangeHandler);
-  cy.nodes().on('unselect', nodeSelectChangeHandler);
-  /* debug */
-  if (!initialized) {
-    console.log('cytoscape', cy); // eslint-disable-line no-console
+  let cy = window.cy;
+  if (!cy.nodes || cy.nodes().length === 0) {
+    cy = cytoscape({
+      container: cyDOM,
+      elements: { nodes: nodesCytoscape, edges: edgesCytoscape },
+      layout: useLayout,
+      maxZoom: 10,
+      minZoom: 1 / 10,
+      style: cytoscapeStyle,
+      zoom: 4,
+    });
+    // Load popper plugin only once. It may be loaded after cy is initialized.
+    if (!cy.popper) {
+      cytoscape.use(popper);
+    }
+    // Instantiate and register event handlers.
+    const layoutChangeHandler = layoutChangeHandlerFactory(appState);
+    const nodeSelectChangeHandler = nodeSelectChangeHandlerFactory(appState);
+    cy.nodes().on('click', nodeClickHandler);
+    cy.nodes().on('mouseout', nodeMouseoutHandlerFactory(appState));
+    cy.nodes().on('mouseover', nodeMouseoverHandler);
+    cy.nodes().on('position', layoutChangeHandler);
+    cy.nodes().on('select', nodeSelectChangeHandler);
+    cy.nodes().on('unselect', nodeSelectChangeHandler);
+    window.cy = cy;
+    if (cy.nodes().length === 0) {
+      console.log('cytoscape instance', cy); // eslint-disable-line no-console
+    }
   }
-  window.cy = cy;
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
@@ -263,7 +287,7 @@ const main = ({ appState }) => {
   swapElement(legend, legendNew);
   // table#node-data
   const table = document.getElementById('node-data');
-  const tableNew = renderTable({ table, cytoscapeInstance: cy, appState });
+  const tableNew = renderTable({ appState, table, highlight, cytoscapeInstance: cy });
   swapElement(table, tableNew);
 };
 // Load manifest, graph and state information from the workspace.
@@ -304,7 +328,6 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     manifest,
     nodes,
     stateWSRef,
-    initialized: true,
     loading: false,
     message: '',
     messageCallback: () => {},
@@ -320,13 +343,15 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
   const wof = new WOF({
     kbase_session: cookies.kbase_session, // eslint-disable-line camelcase
   });
+  /* Initialize renderer. */
+  const appRenderer = new Renderer((appState) => main({ appState }), 50);
   /* Initialize appState. */
   const appState = new State(
     {
       wof,
       edges: [],
       edgeMetadata: {},
-      initialized: false,
+      highlight: null,
       layout: true,
       loading: false,
       manifest: {
@@ -335,12 +360,12 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
       message: '',
       messageCallback: () => {},
       nodes: [],
-      sort: 'selected',
+      sort: '_selected',
       stateWSRef: '',
     },
     /* Render the graph when appState.state is updated. */
     (appState) => {
-      main({ appState });
+      appRenderer.requestRender(appState);
     }
   );
   /* loading metadata */
@@ -365,7 +390,6 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     };
     /* Stop loading and prompt user to load large graph. */
     appState.setState({
-      initialized: true,
       message: graphIsLargeMessage,
       messageCallback: graphIsLargeCallback,
       loading: false,
