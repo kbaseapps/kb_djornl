@@ -1,5 +1,6 @@
 """ kb_djornl unit tests """
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
 import json
 import os
 import shutil
@@ -7,20 +8,49 @@ import subprocess
 import time
 import unittest
 
+from collections import defaultdict
 from configparser import ConfigParser
 from urllib.parse import urlparse
 
-from installed_clients.DataFileUtilClient import (  # pylint: disable=import-error
-    DataFileUtil,
-)
-from installed_clients.WorkspaceClient import Workspace  # pylint: disable=import-error
+from installed_clients.DataFileUtilClient import DataFileUtil
+from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
+from installed_clients.KBaseReportClient import KBaseReport
+from installed_clients.WorkspaceClient import Workspace
 
-from kb_djornl.utils import fork_rwr_cv, fork_rwr_loe  # pylint: disable=import-error
-from kb_djornl.kb_djornlImpl import kb_djornl  # pylint: disable=import-error
-from kb_djornl.kb_djornlServer import MethodContext  # pylint: disable=import-error
-from kb_djornl.authclient import (  # pylint: disable=import-error,no-name-in-module
-    KBaseAuth as _KBaseAuth,
-)
+from kb_djornl.utils import fork_rwr_cv, fork_rwr_loe
+from kb_djornl.kb_djornlImpl import kb_djornl
+from kb_djornl.kb_djornlServer import MethodContext
+from kb_djornl.authclient import KBaseAuth as _KBaseAuth
+
+
+def echo(*args, **kwargs):
+    """ echo arguments """
+    print(args)
+    print(kwargs)
+    return defaultdict(dict)
+
+
+class EchoMock:  # pylint: disable=too-few-public-methods
+    """ echo mocker """
+
+    def __getattribute__(self, name):
+        assert name
+        return echo
+
+
+class MockDFU:  # pylint: disable=too-few-public-methods
+    """ mock dfu """
+
+    @staticmethod
+    def save_objects(params):
+        """ mock dfu save_objects """
+        assert params
+        return [[None] * 11]
+
+    @staticmethod
+    def ws_name_to_id(name):
+        """ mock workspace name to id """
+        return len(name)
 
 
 class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
@@ -60,8 +90,10 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         cls.wsClient = Workspace(cls.wsURL)
         cls.callback_url = os.environ["SDK_CALLBACK_URL"]
         cls.dfu = DataFileUtil(cls.callback_url)
+        cls.gsu = GenomeSearchUtil(cls.callback_url)
         cls.serviceImpl = kb_djornl(cls.cfg)
         cls.scratch = cls.cfg["scratch"]
+        cls.report = KBaseReport(cls.callback_url)
         cls.reports_path = os.path.join(cls.scratch, "reports")
         suffix = int(time.time() * 1000)
         cls.wsName = "test_kb_djornl_" + str(suffix)
@@ -197,7 +229,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
 
     def test_01_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
-        ret = self.serviceImpl.run_rwr_loe(
+        self.serviceImpl.run_rwr_loe(
             self.ctx,
             {
                 "workspace_name": self.wsName,
@@ -208,20 +240,22 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "output_name": "genesMatched",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
+                "clients": {
+                    "report": EchoMock(),
+                    "dfu": MockDFU,
+                    "gsu": EchoMock(),
+                },
             },
         )
-        ref = ret[0]["report_ref"]
-        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
-        report = out["data"][0]["data"]
-        self.assertEqual(report["html_links"][0]["name"], "index.html")
 
     def test_01_run_rwr_loe_target(self):
         """RWR LOE target test case"""
-        ret = self.serviceImpl.run_rwr_loe(
+        self.serviceImpl.run_rwr_loe(
             self.ctx,
             {
                 "workspace_id": self.workspace_id,
                 "workspace_name": self.wsName,
+                # results missing AT1G15550 AT1G02910 ??
                 "gene_keys": (
                     "AT2G39990 AT4G24240 AT5G02820 AT1G15550"
                     "AT1G02910 AT2G18710 AT2G21330 AT2G40400"
@@ -235,9 +269,10 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "output_name": "genesMatched",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
+                "clients": {
+                    "report": EchoMock(),
+                    "dfu": MockDFU,
+                    "gsu": EchoMock(),
+                },
             },
         )
-        ref = ret[0]["report_ref"]
-        out = self.wsClient.get_objects2({"objects": [{"ref": ref}]})
-        report = out["data"][0]["data"]
-        self.assertEqual(report["html_links"][0]["name"], "index.html")

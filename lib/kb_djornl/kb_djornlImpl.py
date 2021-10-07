@@ -38,7 +38,11 @@ class kb_djornl:
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
         self.callback_url = os.environ['SDK_CALLBACK_URL']
+        self.dfu = DataFileUtil(self.callback_url)
+        self.gsu = GenomeSearchUtil(self.callback_url)
+        self.report = KBaseReport(self.callback_url)
         self.shared_folder = config['scratch']
+        self.clients = dict(report=self.report, dfu=self.dfu, gsu=self.gsu)
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
         #END_CONSTRUCTOR
@@ -54,11 +58,9 @@ class kb_djornl:
         # ctx is the context object
         # return variables are: output
         #BEGIN run_rwr_cv
-        clients = dict(
-            report=KBaseReport(self.callback_url, service_ver="dev"),
-            dfu=DataFileUtil(self.callback_url),
-            gsu=GenomeSearchUtil(self.callback_url),
-        )
+        clients = params.get("clients")
+        if not clients:
+            clients = self.clients
         config = dict(
             params=params,
             shared=self.shared_folder,
@@ -82,11 +84,9 @@ class kb_djornl:
         # ctx is the context object
         # return variables are: output
         #BEGIN run_rwr_loe
-        clients = dict(
-            report=KBaseReport(self.callback_url, service_ver="dev"),
-            dfu=DataFileUtil(self.callback_url),
-            gsu=GenomeSearchUtil(self.callback_url),
-        )
+        clients = params.get("clients")
+        if not clients:
+            clients = self.clients
         config = dict(
             params=params,
             shared=self.shared_folder,

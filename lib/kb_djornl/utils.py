@@ -30,7 +30,7 @@ def create_tair10_featureset(
     genes_matched = [gene for gene in genes_found if gene in genes_found]
     genes_unmatched = set(genes).difference(genes_found)
     if len(genes_unmatched) > 0:
-        genes_unmatched_str = ", ".join([gene[0] for gene in genes_unmatched])
+        genes_unmatched_str = ", ".join(genes_unmatched)
         print(
             """WARNING: The following genes were not found in the genome: """
             f"""{genes_unmatched_str}"""
