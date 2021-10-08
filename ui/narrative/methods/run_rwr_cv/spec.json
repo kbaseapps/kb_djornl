@@ -18,6 +18,17 @@
             "optional": "false"
         },
         {
+            "id" : "input_feature_set",
+            "optional" : false,
+            "advanced" : false,
+            "allow_multiple" : false,
+            "default_values" : [ "" ],
+            "field_type" : "text",
+            "text_options" : {
+                "valid_ws_types" : [ "KBaseCollections.FeatureSet" ]
+            }
+        },
+        {
             "id": "multiplex",
             "optional": false,
             "advanced": false,
@@ -194,6 +205,10 @@
                 {
                     "input_parameter": "gene_keys",
                     "target_property": "gene_keys"
+                },
+                {
+                    "input_parameter": "input_feature_set",
+                    "target_property": "input_feature_set"
                 },
                 {
                     "input_parameter": "multiplex",

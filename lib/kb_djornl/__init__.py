@@ -37,7 +37,7 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
         manifest_json.write(json.dumps(manifest))
     node_rank_max = int(params.get("node_rank_max", 10))
     # Run RWR_CV with the given parameters
-    gene_keys, cv_folds = fork_rwr_cv(reports_path, params)
+    gene_keys, cv_folds = fork_rwr_cv(reports_path, params, dfu)
     fullranks_path = os.path.join(reports_path, "data/fullranks.tsv")
     medianranks_path = os.path.join(reports_path, "data/medianranks.tsv")
     shutil.copytree(
