@@ -22,6 +22,11 @@ parameters :
             Seed Gene Keys
         short-hint : |
             Space separated Gene Keys
+    input_feature_set :
+        ui-name : |
+            Input feature set
+        short-hint : |
+            Feature Set of A. thaliana seed genes
     multiplex:
         ui-name : |
             Multiplex

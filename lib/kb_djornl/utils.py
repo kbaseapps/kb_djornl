@@ -81,7 +81,7 @@ def cytoscape_edge(edge):
     )
 
 
-def fork_rwr_cv(reports_path, params):
+def fork_rwr_cv(reports_path, params, dfu):
     """Run the RWR_CV tool in a subproces."""
     # Extract parameters
     cv_multiplex = params["multiplex"]
@@ -89,7 +89,9 @@ def fork_rwr_cv(reports_path, params):
     cv_folds = params.get("folds", "5")
     cv_restart = params.get("restart", ".7")
     cv_tau = params.get("tau", "1")
-    gene_keys = params.get("gene_keys", "").split(" ")
+    featureset_ref = params.get("input_feature_set")
+    gene_keys = get_genes_from_tair10_featureset(featureset_ref, dfu)
+    # gene_keys = params.get("gene_keys", "").split(" ")
     # Write genes to a file to be used with RWR_CV.
     geneset_path = os.path.join(reports_path, "geneset.tsv")
     with open(geneset_path, "w") as geneset_file:
@@ -176,6 +178,13 @@ def get_wsurl():
     config_p = configparser.ConfigParser()
     config_p.read(config_file)
     return config_p["kb_djornl"]["workspace-url"]
+
+
+def get_genes_from_tair10_featureset(featureset_ref, dfu):
+    """ Read genes from a A. thaliana featureset. """
+    featureset_response = dfu.get_objects({"object_refs": [featureset_ref]})
+    featureset = featureset_response["data"][0]["data"]
+    return featureset["element_ordering"]
 
 
 def load_manifest():
