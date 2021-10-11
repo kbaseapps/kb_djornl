@@ -1,6 +1,16 @@
+#!/bin/bash
 # Reference data initialization
 set -x
 set -e
+# Determine environment
+KB_ENV=$(grep -e kbase_endpoint /kb/module/work/config.properties \
+    | cut -f3 -d'/' | cut -f1 -d. \
+)
+if [[ "$KB_ENV" == 'ci' ]]; then
+    RWRTOOLS_BLOB_URL='https://ci.kbase.us/services/shock-api/node/0481bd3b-14b4-40f9-a585-aee531235edc?download_raw';
+elif [[ "$KB_ENV" == 'appdev' ]]; then
+    RWRTOOLS_BLOB_URL='https://appdev.kbase.us/services/shock-api/node/29d12bac-53b9-451f-8fc6-48124f1c2f8f?download_raw';
+fi
 # Retrieve static data relation engine
 git clone --depth 1 \
     https://github.com/kbase/relation_engine.git \
@@ -12,13 +22,12 @@ git clone --depth 1 \
 # Validate exascale_data using importers.djornl.parser
 pip install -r /data/relation_engine/requirements.txt
 cd /data/relation_engine
-PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
-    python -m importers.djornl.parser --dry-run
+ PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
+     python -m importers.djornl.parser --dry-run
 # Retrieve RWR tools and data
 mkdir -p /data/RWRtools
-curl -H "Authorization: OAuth $KB_AUTH_TOKEN " \
-  -o /data/RWRtools/RWRtools.tar.gz \
-  https://ci.kbase.us/services/shock-api/node/0481bd3b-14b4-40f9-a585-aee531235edc?download_raw
+curl -fsSL -H "Authorization: OAuth $KB_AUTH_TOKEN " \
+  -o /data/RWRtools/RWRtools.tar.gz $RWRTOOLS_BLOB_URL
 cd /data/RWRtools
 tar xzvf RWRtools.tar.gz
 # remove the database file if it exists
