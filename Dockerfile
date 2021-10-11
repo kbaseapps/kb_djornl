@@ -31,7 +31,6 @@ COPY ./ /kb/module
 RUN chmod -R a+rw /kb/module
 # build js report app
 RUN npm run build -- --mode production --output-path /opt/work/build
-
 RUN make all
 
 ENTRYPOINT [ "./scripts/entrypoint.sh" ]

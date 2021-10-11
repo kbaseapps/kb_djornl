@@ -17,7 +17,7 @@ elif [ "${1}" = "async" ] ; then
   sh ./scripts/run_async.sh
 elif [ "${1}" = "init" ] ; then
   echo "Initialize module"
-  sh ./scripts/refdata-load.sh
+  bash ./scripts/refdata-load.sh
 elif [ "${1}" = "bash" ] ; then
   bash
 elif [ "${1}" = "report" ] ; then

@@ -68,6 +68,9 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         # Getting username from Auth profile for token
         authServiceUrl = cls.cfg["auth-service-url"]  # pylint: disable=invalid-name
         auth_client = _KBaseAuth(authServiceUrl)
+        auth_service_url = urlparse(authServiceUrl)
+        cls.env = auth_service_url.netloc.split(".")[0]
+        print(f"Detected environment: {cls.env}")
         user_id = auth_client.get_user(token)
         # WARNING: don't call any logging methods on the context object,
         # it'll result in a NoneType error
@@ -158,8 +161,10 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                     print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
                     continue
 
-    def test_01_run_rwr_cv(self):
+    def test_01_run_rwr_cv(self):  # pylint: disable=too-many-locals
         """RWR CV test case"""
+        env_featureset_ref = dict(appdev="61397/3/1", ci="59690/138/1")
+        featureset_ref = env_featureset_ref[self.env]
         ret = self.serviceImpl.run_rwr_cv(
             self.ctx,
             {
@@ -167,7 +172,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "workspace_name": self.wsName,
                 # classic test
                 # "gene_keys": "ATCG00280 AT1G01100 AT1G18590 X",
-                "input_feature_set": "61397/3/1",
+                "input_feature_set": featureset_ref,
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
                 "output_name": "genesMatched",
