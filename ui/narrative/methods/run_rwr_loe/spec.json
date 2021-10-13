@@ -11,18 +11,26 @@
     },
     "parameters": [
         {
-            "advanced": "false",
-            "allow_multiple": "false",
-            "field_type": "text",
-            "id": "gene_keys",
-            "optional": "false"
+            "id" : "seeds_feature_set",
+            "optional" : false,
+            "advanced" : false,
+            "allow_multiple" : false,
+            "default_values" : [ "" ],
+            "field_type" : "text",
+            "text_options" : {
+                "valid_ws_types" : [ "KBaseCollections.FeatureSet" ]
+            }
         },
         {
-            "advanced": "false",
-            "allow_multiple": "false",
-            "field_type": "text",
-            "id": "gene_keys2",
-            "optional": "true"
+            "id" : "targets_feature_set",
+            "optional" : true,
+            "advanced" : false,
+            "allow_multiple" : false,
+            "default_values" : [ "" ],
+            "field_type" : "text",
+            "text_options" : {
+                "valid_ws_types" : [ "KBaseCollections.FeatureSet" ]
+            }
         },
         {
             "id": "multiplex",
@@ -163,12 +171,12 @@
                     "target_property": "workspace_id"
                 },
                 {
-                    "input_parameter": "gene_keys",
-                    "target_property": "gene_keys"
+                    "input_parameter": "seeds_feature_set",
+                    "target_property": "seeds_feature_set"
                 },
                 {
-                    "input_parameter": "gene_keys2",
-                    "target_property": "gene_keys2"
+                    "input_parameter": "targets_feature_set",
+                    "target_property": "targets_feature_set"
                 },
                 {
                     "input_parameter": "multiplex",

@@ -17,14 +17,9 @@ icon: icon.png
 # Configure the display and description of parameters
 #
 parameters :
-    gene_keys :
+    seeds_feature_set :
         ui-name : |
             Seed Gene Keys
-        short-hint : |
-            Space separated Gene Keys
-    input_feature_set :
-        ui-name : |
-            Input feature set
         short-hint : |
             Feature Set of A. thaliana seed genes
     multiplex:

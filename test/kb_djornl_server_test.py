@@ -38,19 +38,32 @@ class EchoMock:  # pylint: disable=too-few-public-methods
         return echo
 
 
-class MockDFU:  # pylint: disable=too-few-public-methods
+class MockDFU:
     """ mock dfu """
 
-    @staticmethod
-    def save_objects(params):
+    def save_objects(self, params):
         """ mock dfu save_objects """
-        assert params
+        assert self, params
         return [[None] * 11]
 
-    @staticmethod
-    def ws_name_to_id(name):
+    def ws_name_to_id(self, name):
         """ mock workspace name to id """
+        assert self
         return len(name)
+
+    def get_objects(self, params):
+        """ mock get_objects """
+        assert self
+        ref = params["object_refs"][0]
+        mock_filenames = dict(
+            loe_seeds="./data/loe_seeds.ci.json",
+            loe_targets="./data/loe_targets.ci.json",
+        )
+        # use the cv_seeds by default
+        mock_filename = mock_filenames.get(ref, "./data/cv_seeds.ci.json")
+        with open(mock_filename) as dfu_response_mock:
+            results = json.load(dfu_response_mock)
+        return results
 
 
 class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
@@ -106,6 +119,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             cls.spec_rwr_cv = json.load(cv_spec)
         with open("../ui/narrative/methods/run_rwr_loe/spec.json") as loe_spec:
             cls.spec_rwr_loe = json.load(loe_spec)
+        env_featureset_ref = dict(appdev="61397/3/1", ci="59690/138/1")
+        cls.seed0_ref = env_featureset_ref[cls.env]
 
     @classmethod
     def tearDownClass(cls):
@@ -138,7 +153,6 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
     > the test method names with respect to the built-in ordering for strings.
     """
     # @unittest.skip("Skip test for debugging")
-    @unittest.skip("Skip test for debugging")
     def test_00_rwr_cv_multiplexes(self):
         """Run RWR CV on each available multiplex"""
         multiplexes = [
@@ -156,15 +170,13 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 os.makedirs(self.reports_path, exist_ok=True)
                 params = self._get_multiplex_params(multiplex)
                 try:
-                    fork_rwr_cv(self.reports_path, params)
+                    fork_rwr_cv(self.reports_path, params, MockDFU())
                 except subprocess.CalledProcessError:
                     print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
                     continue
 
     def test_01_run_rwr_cv(self):  # pylint: disable=too-many-locals
         """RWR CV test case"""
-        env_featureset_ref = dict(appdev="61397/3/1", ci="59690/138/1")
-        featureset_ref = env_featureset_ref[self.env]
         ret = self.serviceImpl.run_rwr_cv(
             self.ctx,
             {
@@ -172,7 +184,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "workspace_name": self.wsName,
                 # classic test
                 # "gene_keys": "ATCG00280 AT1G01100 AT1G18590 X",
-                "input_feature_set": featureset_ref,
+                "seeds_feature_set": self.seed0_ref,
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
                 "output_name": "genesMatched",
@@ -213,7 +225,6 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")
 
-    @unittest.skip("Skip test for debugging")
     def test_00_run_rwr_loe_multiplexes(self):
         """Run RWR LOE on each available multiplex"""
         multiplexes = [
@@ -230,12 +241,11 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 os.makedirs(self.reports_path, exist_ok=True)
                 params = self._get_multiplex_params(multiplex)
                 try:
-                    fork_rwr_loe(self.reports_path, params)
+                    fork_rwr_loe(self.reports_path, params, MockDFU())
                 except subprocess.CalledProcessError:
                     print(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
                     continue
 
-    @unittest.skip("Skip test for debugging")
     def test_01_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
         self.serviceImpl.run_rwr_loe(
@@ -243,7 +253,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             {
                 "workspace_name": self.wsName,
                 "workspace_id": self.workspace_id,
-                "gene_keys": "ATCG00280 AT1G01100 AT1G18590",
+                "seeds_feature_set": self.seed0_ref,
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "10",
                 "output_name": "genesMatched",
@@ -251,13 +261,12 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "tau": ".4,.8,1.2,1.6",
                 "clients": {
                     "report": EchoMock(),
-                    "dfu": MockDFU,
+                    "dfu": MockDFU(),
                     "gsu": EchoMock(),
                 },
             },
         )
 
-    @unittest.skip("Skip test for debugging")
     def test_01_run_rwr_loe_target(self):
         """RWR LOE target test case"""
         self.serviceImpl.run_rwr_loe(
@@ -266,14 +275,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "workspace_id": self.workspace_id,
                 "workspace_name": self.wsName,
                 # results missing AT1G15550 AT1G02910 ??
-                "gene_keys": (
-                    "AT2G39990 AT4G24240 AT5G02820 AT1G15550"
-                    "AT1G02910 AT2G18710 AT2G21330 AT2G40400"
-                ),
-                "gene_keys2": (
-                    "AT3G17930 AT4G39640 AT5G66190 AT1G23310"
-                    "AT5G51820 AT2G39800 AT2G38120 AT2G38170"
-                ),
+                "seeds_feature_set": "loe_seeds",
+                "targets_feature_set": "loe_targets",
                 "multiplex": "High_Confidence_AT_d0.5_v01.RData",
                 "node_rank_max": "200",
                 "output_name": "genesMatched",
@@ -281,7 +284,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "tau": ".4,.8,1.2,1.6",
                 "clients": {
                     "report": EchoMock(),
-                    "dfu": MockDFU,
+                    "dfu": MockDFU(),
                     "gsu": EchoMock(),
                 },
             },

@@ -1,5 +1,5 @@
 FROM kbase/sdkbase2:python
-MAINTAINER KBase Developer
+MAINTAINER KBase developer
 
 RUN apt-get update
 RUN apt-get upgrade -y

@@ -11,14 +11,7 @@
     },
     "parameters": [
         {
-            "advanced": "false",
-            "allow_multiple": "false",
-            "field_type": "text",
-            "id": "gene_keys",
-            "optional": "false"
-        },
-        {
-            "id" : "input_feature_set",
+            "id" : "seeds_feature_set",
             "optional" : false,
             "advanced" : false,
             "allow_multiple" : false,
@@ -203,12 +196,8 @@
                     "target_property": "workspace_id"
                 },
                 {
-                    "input_parameter": "gene_keys",
-                    "target_property": "gene_keys"
-                },
-                {
-                    "input_parameter": "input_feature_set",
-                    "target_property": "input_feature_set"
+                    "input_parameter": "seeds_feature_set",
+                    "target_property": "seeds_feature_set"
                 },
                 {
                     "input_parameter": "multiplex",
