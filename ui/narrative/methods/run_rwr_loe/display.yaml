@@ -18,17 +18,17 @@ icon: icon.png
 # Configure the display and description of parameters
 #
 parameters :
-    gene_keys :
+    seeds_feature_set:
         ui-name : |
             Seed Gene Keys
         short-hint : |
-            If no target gene keys are provided below then these seeds will be
-            used in a context analysis
-    gene_keys2 :
+            Feature Set of A. thaliana target genes. If no target gene keys are
+            provided below then these seeds will be used in a context analysis.
+    targets_feature_set:
         ui-name : |
             Target Gene Keys
         short-hint : |
-            Space separated Gene Keys
+            Feature Set of A. thaliana target genes
     multiplex:
         ui-name : |
             Multiplex

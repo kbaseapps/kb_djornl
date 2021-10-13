@@ -89,7 +89,7 @@ def fork_rwr_cv(reports_path, params, dfu):
     cv_folds = params.get("folds", "5")
     cv_restart = params.get("restart", ".7")
     cv_tau = params.get("tau", "1")
-    featureset_ref = params.get("input_feature_set")
+    featureset_ref = params.get("seeds_feature_set")
     gene_keys = get_genes_from_tair10_featureset(featureset_ref, dfu)
     # gene_keys = params.get("gene_keys", "").split(" ")
     # Write genes to a file to be used with RWR_CV.
@@ -123,20 +123,22 @@ def fork_rwr_cv(reports_path, params, dfu):
     return gene_keys, cv_folds
 
 
-def fork_rwr_loe(reports_path, params):
+def fork_rwr_loe(reports_path, params, dfu):  # pylint: disable=too-many-locals
     """Run the RWR_LOE tool in a subproces."""
     loe_multiplex = params["multiplex"]
     loe_restart = params.get("restart", ".7")
     loe_tau = params.get("tau", "1")
     # Write genes to a file to be used with RWR_LOE.
     geneset_path = os.path.join(reports_path, "geneset.tsv")
-    gene_keys = params["gene_keys"].split(" ") if params["gene_keys"] else []
+    seeds_featureset_ref = params.get("seeds_feature_set")
+    gene_keys = get_genes_from_tair10_featureset(seeds_featureset_ref, dfu)
     with open(geneset_path, "w") as geneset_file:
         geneset_file.write(genes_to_rwr_tsv(gene_keys))
     # Write the second set of genes to a file to be used with RWR_LOE.
+    targets_featureset_ref = params.get("targets_feature_set")
     gene_keys2 = []
-    if "gene_keys2" in params and params["gene_keys2"]:
-        gene_keys2 = params["gene_keys2"].split(" ")
+    if "targets_featureset_ref" in params and params["targets_featureset_ref"]:
+        gene_keys2 = get_genes_from_tair10_featureset(targets_featureset_ref, dfu)
     second_geneset = ""
     if gene_keys2:
         geneset2_path = os.path.join(reports_path, "geneset2.tsv")

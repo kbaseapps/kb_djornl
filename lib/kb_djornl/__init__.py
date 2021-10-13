@@ -126,7 +126,7 @@ def run_rwr_loe(
         manifest_json.write(json.dumps(manifest))
     node_rank_max = int(params.get("node_rank_max", 10))
     # Run RWR_LOE with the given parameters
-    gene_keys, gene_keys2 = fork_rwr_loe(reports_path, params)
+    gene_keys, gene_keys2 = fork_rwr_loe(reports_path, params, dfu)
     tsv_out = "data/ranks.tsv"
     output_path = os.path.join(reports_path, tsv_out)
     shutil.copytree(

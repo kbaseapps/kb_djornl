@@ -1,0 +1,28 @@
+{
+    "data": [
+        {
+            "data": {
+                "description": "",
+                "element_ordering": ["ATCG00280", "AT1G01100", "AT1G18590"],
+                "elements": {
+                    "AT1G01100": ["6976/1042/4"],
+                    "AT1G18590": ["6976/1042/4"],
+                    "ATCG00280": ["6976/1042/4"]
+                }
+            },
+            "info": [
+                138,
+                "CVSeeds",
+                "KBaseCollections.FeatureSet-4.0",
+                "2021-10-08T20:05:45+0000",
+                1,
+                "dakota_ci",
+                59690,
+                "dakota_ci:narrative_1613146930948",
+                "7d6039c242f8aa1c8cfcb722a0947941",
+                172,
+                {}
+            ]
+        }
+    ]
+}
