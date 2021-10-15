@@ -172,11 +172,13 @@
                 },
                 {
                     "input_parameter": "seeds_feature_set",
-                    "target_property": "seeds_feature_set"
+                    "target_property": "seeds_feature_set",
+                    "target_type_transform": "resolved-ref"
                 },
                 {
                     "input_parameter": "targets_feature_set",
-                    "target_property": "targets_feature_set"
+                    "target_property": "targets_feature_set",
+                    "target_type_transform": "resolved-ref"
                 },
                 {
                     "input_parameter": "multiplex",
