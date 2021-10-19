@@ -30,11 +30,11 @@ of k.
 
 ### RWRtools LOE
 
-This app wraps the RWR Lines of Evidence tool which performs RWR from one
-geneset to see how many of another geneset are highly ranked. This can be used
-to build multiple lines of evidence from the various input networks to relate
-the two gene sets. This script will run RWR using the first geneset against the
-entire genome, but reports only the ranks from the second gene set.
+This app wraps the RWR Lines of Evidence tool which has two possible functions.  
+Given one geneset of seeds, rankings for all other genes in the network will 
+be returned.  Given a second geneset, ranking for just the genes in that geneset 
+will be returned.  This can be used to build multiple lines of evidence from 
+the various input networks to relate the two gene sets.
 
 # Tests
 
