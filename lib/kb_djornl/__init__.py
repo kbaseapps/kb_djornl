@@ -15,6 +15,7 @@ from .utils import (
     fork_rwr_loe,
     genes_to_rwr_tsv,
     load_manifest,
+    load_multiplexes,
     put_graph_metadata,
     query_subgraph,
 )
@@ -65,10 +66,14 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
     report_name = f"kb_rwr_cv_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
+    multiplex = params["multiplex"]
+    layers = load_multiplexes()[multiplex]
     put_graph_metadata(
         graph_metadata,
         dict(
             dfu=dfu,
+            layers=layers,
+            multiplex=multiplex,
             report_name=report_name,
             reports_path=reports_path,
             ws_name=ws_name,
@@ -155,10 +160,14 @@ def run_rwr_loe(
     report_name = f"kb_rwr_loe_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
+    multiplex = params["multiplex"]
+    layers = load_multiplexes()[multiplex]
     put_graph_metadata(
         graph_metadata,
         dict(
             dfu=dfu,
+            layers=layers,
+            multiplex=multiplex,
             report_name=report_name,
             reports_path=reports_path,
             ws_name=ws_name,

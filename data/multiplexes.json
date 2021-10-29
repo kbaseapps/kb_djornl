@@ -1,0 +1,47 @@
+{
+  "All_Layers_AT_d0.5_v01.RData": [
+    "AT-UU-GA-01-AA-01",
+    "AT-UU-KS-00-AA-01",
+    "AT-UU-PP-00-AA-01",
+    "AT-UU-PX-01-AA-01",
+    "AT-UU-RE-00-AA-01",
+    "AT-UU-RP-03-AA-01",
+    "AT-UU-RX-00-AA-01"
+  ],
+  "Close_To_Phenotype_AT_d0.5_v01.RData": [
+    "AT-UU-KS-00-AA-01",
+    "AT-UU-PP-00-AA-01",
+    "AT-UU-RX-00-AA-01"
+  ],
+  "Expression_Regulation_AT_d0.5_v01.RData": [
+    "AT-UU-GA-01-AA-01",
+    "AT-UU-PX-01-AA-01",
+    "AT-UU-RE-00-AA-01"
+  ],
+  "GO_AT_d0.5_v01.RData": [
+    "AT-UU-GO-03-AA-01"
+  ],
+  "High_Confidence_AT_d0.5_v01.RData": [
+    "AT-UU-KS-00-AA-01",
+    "AT-UU-PP-00-AA-01",
+    "AT-UU-RE-00-AA-01",
+    "AT-UU-RX-00-AA-01"
+  ],
+  "Metabolic_AT_d0.5_v01.RData": [
+    "AT-UU-RX-00-AA-01"
+  ],
+  "Ontology_AT_d0.5_v01.RData": [
+    "AT-UU-KS-00-AA-01",
+    "AT-UU-GO-03-AA-01"
+  ],
+  "Predicted_Regulation_AT_d0.5_v01.RData": [
+    "AT-UU-GA-01-AA-01",
+    "AT-UU-PX-01-AA-01",
+    "AT-UU-RP-03-AA-01"
+  ],
+  "Unknown_Function_AT_d0.5_v01.RData": [
+    "AT-UU-CD-00-AA-01",
+    "AT-UU-PP-00-AA-01",
+    "AT-UU-RX-00-AA-01"
+  ]
+}

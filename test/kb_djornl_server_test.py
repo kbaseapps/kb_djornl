@@ -1,7 +1,9 @@
 """ kb_djornl unit tests """
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error
+# pylint: disable=logging-fstring-interpolation
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -25,8 +27,8 @@ from kb_djornl.authclient import KBaseAuth as _KBaseAuth
 
 def echo(*args, **kwargs):
     """ echo arguments """
-    print(args)
-    print(kwargs)
+    logging.info(f"args: {args}")
+    logging.info(f"kwargs: {kwargs}")
     return defaultdict(dict)
 
 
@@ -83,7 +85,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         auth_client = _KBaseAuth(authServiceUrl)
         auth_service_url = urlparse(authServiceUrl)
         cls.env = auth_service_url.netloc.split(".")[0]
-        print(f"Detected environment: {cls.env}")
+        logging.info(f"Detected environment: {cls.env}")
         user_id = auth_client.get_user(token)
         # WARNING: don't call any logging methods on the context object,
         # it'll result in a NoneType error
@@ -126,7 +128,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
     def tearDownClass(cls):
         if hasattr(cls, "wsName"):
             cls.wsClient.delete_workspace({"workspace": cls.wsName})
-            print("Test workspace was deleted")
+            logging.info("Test workspace was deleted")
 
     def setUp(self):
         """ remove report dir before each test"""
@@ -172,7 +174,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 try:
                     fork_rwr_cv(self.reports_path, params, MockDFU())
                 except subprocess.CalledProcessError:
-                    print(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
+                    logging.info(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
                     continue
 
     def test_01_run_rwr_cv(self):  # pylint: disable=too-many-locals
@@ -243,7 +245,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 try:
                     fork_rwr_loe(self.reports_path, params, MockDFU())
                 except subprocess.CalledProcessError:
-                    print(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
+                    logging.info(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
                     continue
 
     def test_01_run_rwr_loe_context_analysis(self):
