@@ -6,7 +6,10 @@ set -e
 KB_ENV=$(grep -e kbase_endpoint /kb/module/work/config.properties \
     | cut -f3 -d'/' | cut -f1 -d. \
 )
-if [[ "$KB_ENV" == 'ci' ]]; then
+echo Detected environment $KB_ENV
+if [[ "$KB_ENV" == 'kbase' ]]; then
+    RWRTOOLS_BLOB_URL='https://kbase.us/services/shock-api/node/e27516d4-e54d-4931-91f7-7d36c25fe3cc?download_raw'
+elif [[ "$KB_ENV" == 'ci' ]]; then
     RWRTOOLS_BLOB_URL='https://ci.kbase.us/services/shock-api/node/0481bd3b-14b4-40f9-a585-aee531235edc?download_raw';
 elif [[ "$KB_ENV" == 'appdev' ]]; then
     RWRTOOLS_BLOB_URL='https://appdev.kbase.us/services/shock-api/node/29d12bac-53b9-451f-8fc6-48124f1c2f8f?download_raw';
