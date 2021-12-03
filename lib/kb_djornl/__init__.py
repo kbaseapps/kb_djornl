@@ -21,7 +21,7 @@ from .utils import (
 
 
 def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
-    """ run RWR_CV and generate a report """
+    """run RWR_CV and generate a report"""
     params = config.get("params")
     shared = config.get("shared")
     dfu = clients["dfu"]
@@ -110,7 +110,7 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
 def run_rwr_loe(
     config, clients
 ):  # pylint: disable=too-many-locals, too-many-statements
-    """ run RWR_LOE and generate a report """
+    """run RWR_LOE and generate a report"""
     params = config.get("params")
     shared = config.get("shared")
     dfu = clients["dfu"]

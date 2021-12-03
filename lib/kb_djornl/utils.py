@@ -14,7 +14,7 @@ DATA_ROOT = os.environ.get("KBDJORNL_DATA_ROOT") or "/data/exascale_data/"
 def create_tair10_featureset(
     genes, config, dfu, gsu
 ):  # pylint: disable=too-many-locals
-    """ Create an Arabidopsis thaliana featureset from a list of genes. """
+    """Create an Arabidopsis thaliana featureset from a list of genes."""
     params = config.get("params")
     workspace_id = params["workspace_id"]
     genome_ref = "Phytozome_Genomes/Athaliana_TAIR10"
@@ -56,7 +56,7 @@ def create_tair10_featureset(
 
 
 def cytoscape_node(node, rank, seed=False):
-    """ convert nodedata into cytoscape format """
+    """convert nodedata into cytoscape format"""
     return dict(
         defline=node["defline"],
         geneSymbols=node["gene_symbols"],
@@ -71,7 +71,7 @@ def cytoscape_node(node, rank, seed=False):
 
 
 def cytoscape_edge(edge):
-    """ convert edge data into cytoscape format """
+    """convert edge data into cytoscape format"""
     return dict(
         id=edge["_id"],
         edgeType=edge["edge_type"],
@@ -170,12 +170,12 @@ def fork_rwr_loe(reports_path, params, dfu):  # pylint: disable=too-many-locals
 
 
 def genes_to_rwr_tsv(genes):
-    """ convert a list of genes to a tsv string for use with RWR tools"""
+    """convert a list of genes to a tsv string for use with RWR tools"""
     return "".join([f"report\t{gene}\n" for gene in genes])
 
 
 def get_wsurl():
-    """ Get the workspace url for this environment. """
+    """Get the workspace url for this environment."""
     config_file = os.environ.get("KB_DEPLOYMENT_CONFIG")
     config_p = configparser.ConfigParser()
     config_p.read(config_file)
@@ -183,14 +183,14 @@ def get_wsurl():
 
 
 def get_genes_from_tair10_featureset(featureset_ref, dfu):
-    """ Read genes from a A. thaliana featureset. """
+    """Read genes from a A. thaliana featureset."""
     featureset_response = dfu.get_objects({"object_refs": [featureset_ref]})
     featureset = featureset_response["data"][0]["data"]
     return featureset["element_ordering"]
 
 
 def load_manifest():
-    """ Load the manifest yaml file """
+    """Load the manifest yaml file"""
     manifest_path = os.path.join(DATA_ROOT, "prerelease/manifest.yaml")
     with open(manifest_path) as manifest_file:
         manifest = yaml.safe_load(manifest_file)
@@ -198,14 +198,14 @@ def load_manifest():
 
 
 def normalized_node_id(node_id):
-    """ normalize node id """
+    """normalize node id"""
     if "/" in node_id:
         return node_id.split("/")[1]
     return node_id
 
 
 def object_info_as_dict(object_info):
-    """ Convert a KBase object_info list into a dictionary. """
+    """Convert a KBase object_info list into a dictionary."""
     [
         _id,
         _name,
@@ -288,7 +288,7 @@ QUERY_NODE = """SELECT "GID" as node_id, *
 
 
 def query_sqlite(genes):  # pylint: disable=too-many-locals
-    """ Query the data loaded into sqlite3 based on seed genes """
+    """Query the data loaded into sqlite3 based on seed genes"""
     networks_path = os.path.join(DATA_ROOT, "networks.db")
     con = sqlite3.connect(networks_path)
     manifest = load_manifest()

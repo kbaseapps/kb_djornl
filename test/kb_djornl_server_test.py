@@ -24,14 +24,14 @@ from kb_djornl.authclient import KBaseAuth as _KBaseAuth
 
 
 def echo(*args, **kwargs):
-    """ echo arguments """
+    """echo arguments"""
     print(args)
     print(kwargs)
     return defaultdict(dict)
 
 
 class EchoMock:  # pylint: disable=too-few-public-methods
-    """ echo mocker """
+    """echo mocker"""
 
     def __getattribute__(self, name):
         assert name
@@ -39,20 +39,20 @@ class EchoMock:  # pylint: disable=too-few-public-methods
 
 
 class MockDFU:
-    """ mock dfu """
+    """mock dfu"""
 
     def save_objects(self, params):
-        """ mock dfu save_objects """
+        """mock dfu save_objects"""
         assert self, params
         return [[None] * 11]
 
     def ws_name_to_id(self, name):
-        """ mock workspace name to id """
+        """mock workspace name to id"""
         assert self
         return len(name)
 
     def get_objects(self, params):
-        """ mock get_objects """
+        """mock get_objects"""
         assert self
         ref = params["object_refs"][0]
         mock_filenames = dict(
@@ -67,7 +67,7 @@ class MockDFU:
 
 
 class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
-    """ kb_djornl unit test class """
+    """kb_djornl unit test class"""
 
     @classmethod
     def setUpClass(cls):
@@ -129,12 +129,12 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
             print("Test workspace was deleted")
 
     def setUp(self):
-        """ remove report dir before each test"""
+        """remove report dir before each test"""
         # the scratch dir is named shared in kb_djornlImpl
         shutil.rmtree(self.reports_path, ignore_errors=True)
 
     def _get_multiplex_params(self, multiplex):
-        """ Make parameters for RWR_CV and RWR_LOE mutliplex tests """
+        """Make parameters for RWR_CV and RWR_LOE mutliplex tests"""
         return {
             "workspace_id": self.workspace_id,
             "workspace_name": self.wsName,
