@@ -13,7 +13,7 @@ import requests
 
 
 def download_assets(assets, endpoint, cookies):
-    """Download assets from endpoint using cookies. """
+    """Download assets from endpoint using cookies."""
     destination_path = "test_local/workdir/tmp/reports"
     for asset in assets:
         asset_url = endpoint._replace(path=asset).geturl()
