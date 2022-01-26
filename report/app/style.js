@@ -2,6 +2,8 @@ import './style.css';
 /* KBase colors and cytoscape style */
 const CYANOBACTERIA_TEAL = '#009688';
 const FROST_BLUE = '#c7dbee';
+const GOLDEN_YELLOW = '#ffd200';
+const LUPINE_PURPLE = '#66489d';
 const RAINIER_CHERRY_RED = '#d2232a';
 const SPRING_GREEN = '#c1cd23';
 const ColorClassOrder = [
@@ -22,11 +24,11 @@ const colorPalette = [
   RAINIER_CHERRY_RED,
   '#037ac0', // freshwater_blue
   '#f78e1e', // microbe orange
-  '#66489d', // lupine purple
+  LUPINE_PURPLE,
   SPRING_GREEN,
   '#9d9389', // graphite grey
   FROST_BLUE,
-  '#ffd200', // golden yellow
+  GOLDEN_YELLOW,
   '#72ccd2', // ocean_blue
   '#5e9732', // grass green
 ];
@@ -65,12 +67,12 @@ export const edgeColorClass = (edgeType, assigned = {}) => {
   assigned[edgeType] = colorClass;
   return colorClass;
 };
-const colorFunc = `mapData(rank, 1, 100, ${RAINIER_CHERRY_RED}, #000)`;
+const colorFunc = `mapData(rank, 1, 100, ${CYANOBACTERIA_TEAL}, ${FROST_BLUE})`;
 export const cytoscapeStyle = [
   {
     selector: 'node',
     style: {
-      'background-color': '#000',
+      'background-color': colorFunc,
       content: 'data(name)',
       color: '#fff',
       'font-family': 'Oxygen, Arial, sans-serif',
@@ -93,24 +95,23 @@ export const cytoscapeStyle = [
   {
     selector: 'node.collected',
     style: {
-      'border-width': 4,
+      'border-width': '4px',
       'border-style': 'solid',
-      'border-color': CYANOBACTERIA_TEAL,
-      'border-opacity': 1,
+      'border-color': RAINIER_CHERRY_RED,
     },
   },
   {
     selector: 'node.highlight',
     style: {
-      'border-color': SPRING_GREEN,
-      'border-width': '64px',
+      'border-color': GOLDEN_YELLOW,
+      'border-width': '8px',
     },
   },
   {
     selector: 'node.seed',
     style: {
-      'border-color': RAINIER_CHERRY_RED,
-      'border-width': '8px',
+      'background-color': LUPINE_PURPLE,
+      'text-outline-color': LUPINE_PURPLE,
     },
   },
   {
