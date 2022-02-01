@@ -21,15 +21,11 @@ RUN apt-get install -y nodejs
 COPY ./package.json /kb/module/package.json
 RUN NO_POSTINSTALL=true npm install --production
 RUN npm install webpack-cli webpack
-# Retrieve RWR tools and data
-# RUN git clone --depth 1 \
-#     https://github.com/dkainer/RWRtools.git \
-#     /opt/work/RWRtools
-RUN mkdir -p /opt/work
 COPY ./ /kb/module
 # fix permissions
 RUN chmod -R a+rw /kb/module
 # build js report app
+RUN mkdir -p /opt/work
 RUN npm run build -- --mode production --output-path /opt/work/build
 RUN make all
 

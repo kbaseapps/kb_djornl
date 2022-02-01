@@ -46,10 +46,13 @@ def main():
         print("Skipping postinstall script.")
         return
     print("Running KBase app tests.")
-    subprocess.run("time kb-sdk test".split(" "), check=True)
+    token, kbase_endpoint = load_config()
+
+    env = dict(os.environ)
+    env["KB_AUTH_TOKEN"] = token
+    subprocess.run("time kb-sdk test".split(" "), check=True, env=env)
 
     print("Loading KBase environment static assets")
-    token, kbase_endpoint = load_config()
     if not token:
         raise Exception("Please update your token in test_local/test.cfg.")
     with open("data/static.txt") as assets_file:
