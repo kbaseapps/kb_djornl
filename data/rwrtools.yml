@@ -8,11 +8,13 @@ dependencies:
   - r-base=4.0.2
   - r-biocmanager
   - r-data.table
+  - r-devtools
   - r-doparallel
   - r-dplyr
   - r-foreach
   - r-igraph=1.2.5
   - r-irkernel
+  - r-iterators
   - r-optparse
   - r-patchwork
   - r-precrec

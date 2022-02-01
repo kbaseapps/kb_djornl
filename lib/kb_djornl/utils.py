@@ -103,7 +103,7 @@ def fork_rwr_cv(reports_path, params, dfu):
         rwrtools_env["RWR_TOOLS_REPO"] = rwrtools_data_path
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
-    ] = f"""Rscript RWR_CV.R
+    ] = f"""Rscript inst/scripts/run_cv.R
                 --data='multiplexes/{cv_multiplex}'
                 --geneset='{geneset_path}'
                 --method='{cv_method}'
@@ -111,6 +111,7 @@ def fork_rwr_cv(reports_path, params, dfu):
                 --restart='{cv_restart}'
                 --tau='{cv_tau}'
                 --numranked='1'
+                --outdir='/opt/work/tmp'
                 --out-fullranks='/opt/work/tmp/fullranks.tsv'
                 --out-medianranks='/opt/work/tmp/medianranks.tsv'
                 --verbose
@@ -139,26 +140,27 @@ def fork_rwr_loe(reports_path, params, dfu):  # pylint: disable=too-many-locals
     gene_keys2 = []
     if "targets_featureset_ref" in params and params["targets_featureset_ref"]:
         gene_keys2 = get_genes_from_tair10_featureset(targets_featureset_ref, dfu)
-    second_geneset = ""
+    query_geneset = ""
     if gene_keys2:
         geneset2_path = os.path.join(reports_path, "geneset2.tsv")
         with open(geneset2_path, "w") as geneset2_file:
             geneset2_file.write(genes_to_rwr_tsv(gene_keys2))
-        second_geneset = f"--geneset2='{geneset2_path}'"
+        query_geneset = f"--query_geneset='{geneset2_path}'"
     rwrtools_env = dict(os.environ)
     rwrtools_data_path = "/data/RWRtools"
     if os.path.isdir(rwrtools_data_path):
         rwrtools_env["RWR_TOOLS_REPO"] = rwrtools_data_path
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
-    ] = f"""Rscript RWR_LOE.R
+    ] = f"""Rscript inst/scripts/run_loe.R
                 --data='multiplexes/{loe_multiplex}'
-                --geneset1='{geneset_path}'
-                {second_geneset}
+                --seed_geneset='{geneset_path}'
+                {query_geneset}
                 --restart='{loe_restart}'
                 --tau='{loe_tau}'
                 --numranked='1'
-                --out-path='/opt/work/tmp/ranks.tsv'
+                --modname=''
+                --outdir='/opt/work/tmp/'
                 --verbose
     """
     subprocess.run(

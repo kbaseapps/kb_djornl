@@ -37,14 +37,14 @@
             "optional": false,
             "advanced": false,
             "allow_multiple": false,
-            "default_values": [ "All_Layers_AT_d0.5_v01.RData" ],
+            "default_values": [ "All_Layers_AT_d0.5_v02.RData" ],
             "field_type": "dropdown",
             "dropdown_options": {
                 "options": [
                     {
-                        "value": "All_Layers_AT_d0.5_v01.RData",
+                        "value": "All_Layers_AT_d0.5_v02.RData",
                         "display": "All Layers",
-                        "id": "All_Layers_AT_d0.5_v01.RData",
+                        "id": "All_Layers_AT_d0.5_v02.RData",
                         "ui-name": "All Layers"
                     },
                     {
@@ -84,9 +84,9 @@
                         "ui-name": "Ontology"
                     },
                     {
-                        "value": "Predicted_Regulation_AT_d0.5_v01.RData",
+                        "value": "Predicted_Regulation_AT_d0.5_v02.RData",
                         "display": "Predicted Regulation",
-                        "id": "Predicted_Regulation_AT_d0.5_v01.RData",
+                        "id": "Predicted_Regulation_AT_d0.5_v02.RData",
                         "ui-name": "Predicted Regulation"
                     },
                     {
