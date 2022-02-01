@@ -28,9 +28,9 @@ KB_ENV=$(grep -e kbase_endpoint /kb/module/work/config.properties \
 # KB_ENV='appdev'
 echo Detected environment $KB_ENV
 if [[ "$KB_ENV" == 'kbase' ]]; then
-    RWRTOOLS_BLOB_URL=''
+    RWRTOOLS_BLOB_URL='https://kbase.us/services/shock-api/node/872033a7-2476-48e5-8ae0-afa2622376ab?download_raw'
 elif [[ "$KB_ENV" == 'ci' ]]; then
-    RWRTOOLS_BLOB_URL='';
+    RWRTOOLS_BLOB_URL='https://ci.kbase.us/services/shock-api/node/c450f36f-c435-40c8-889e-2c43b1a4d270?download_raw';
 elif [[ "$KB_ENV" == 'appdev' ]]; then
     RWRTOOLS_BLOB_URL='https://appdev.kbase.us/services/shock-api/node/403cef42-7e23-4160-a73f-0f3c26a878e5?download_raw';
 fi
