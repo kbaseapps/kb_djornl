@@ -14,18 +14,16 @@ git clone --depth 1 \
 # Validate exascale_data using importers.djornl.parser
 pip install -r /data/relation_engine/requirements.txt
 cd /data/relation_engine
-# PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
-#     python -m importers.djornl.parser --dry-run
+PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
+    python -m importers.djornl.parser --dry-run
 # remove the database file if it exists
 test -f /data/exascale_data/networks.db && rm /data/exascale/networks.db
 /kb/module/scripts/networks_load.py
 # Retrieve RWR tools and data
-# /kb/module/scripts/rwrtools-env-create.sh
 # Determine environment
 KB_ENV=$(grep -e kbase_endpoint /kb/module/work/config.properties \
     | cut -f3 -d'/' | cut -f1 -d. \
 )
-# KB_ENV='appdev'
 echo Detected environment $KB_ENV
 if [[ "$KB_ENV" == 'kbase' ]]; then
     RWRTOOLS_BLOB_URL='https://kbase.us/services/shock-api/node/872033a7-2476-48e5-8ae0-afa2622376ab?download_raw'
@@ -45,6 +43,4 @@ conda activate rwrtools
 R --no-restore --no-save << HEREDOC
 devtools::install()
 HEREDOC
-#devtools::install(args=-l /data/rwrp)
-#bash /data/RWRtools/quickstart.sh
 touch /data/__READY__
