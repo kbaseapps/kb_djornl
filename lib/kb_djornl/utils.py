@@ -1,6 +1,8 @@
 """ kb_djornl utils """
+# pylint: disable=logging-fstring-interpolation
 import configparser
 import json
+import logging
 import os
 import sqlite3
 import subprocess
@@ -31,8 +33,8 @@ def create_tair10_featureset(
     genes_unmatched = set(genes).difference(genes_found)
     if len(genes_unmatched) > 0:
         genes_unmatched_str = ", ".join(genes_unmatched)
-        print(
-            """WARNING: The following genes were not found in the genome: """
+        logging.warning(
+            """The following genes were not found in the genome: """
             f"""{genes_unmatched_str}"""
         )
     new_feature_set = dict(
@@ -199,6 +201,14 @@ def load_manifest():
     return manifest
 
 
+def load_multiplexes():
+    """Load the multiplex definitions"""
+    multiplexes_path = os.path.join("/kb/module/data/multiplexes.json")
+    with open(multiplexes_path) as multiplexes_file:
+        multiplexes = json.load(multiplexes_file)
+    return multiplexes
+
+
 def normalized_node_id(node_id):
     """normalize node id"""
     if "/" in node_id:
@@ -241,6 +251,8 @@ def put_graph_metadata(metadata, config):  # pylint: disable=too-many-locals
     Create a workspace state object.
     """
     dfu = config["dfu"]
+    layers = config["layers"]
+    multiplex = config["multiplex"]
     report_name = config["report_name"]
     reports_path = config["reports_path"]
     ws_name = config["ws_name"]
@@ -261,7 +273,9 @@ def put_graph_metadata(metadata, config):  # pylint: disable=too-many-locals
     }
     report_state = dfu.save_objects(report_state_params)
     report_state_objid = object_info_as_dict(report_state[0])["objid"]
-    # Add extra metadata for the workspace.
+    # Add extra metadata to be used by the report front end.
+    metadata["layers"] = layers
+    metadata["multiplex"] = multiplex
     metadata["objid"] = report_state_objid
     metadata["wsurl"] = get_wsurl()
     # Save graph metadata.
@@ -361,7 +375,7 @@ def query_sqlite(genes):  # pylint: disable=too-many-locals
 
     def node_shadow(node_id, nodes_data):
         if node_id not in nodes_data:
-            print(f"MISSING METADATA FOR {node_id}")
+            logging.warning(f"MISSING METADATA FOR {node_id}")
         return dict(
             _id=tmpl_id.format(node_id),
             defline="missing metadata",
