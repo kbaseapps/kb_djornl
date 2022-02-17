@@ -3,7 +3,6 @@
 /narrative/static/components/font-awesome/fonts/fontawesome-webfont.ttf
 /narrative/static/components/font-awesome/fonts/fontawesome-webfont.woff
 /narrative/static/components/font-awesome/fonts/fontawesome-webfont.woff2
-/narrative/static/kbase/css/kbaseStylesheet.css
 /narrative/static/kbase/fonts/Oxygen-Bold-webfont.eot
 /narrative/static/kbase/fonts/Oxygen-Bold-webfont.svg
 /narrative/static/kbase/fonts/Oxygen-Bold-webfont.ttf

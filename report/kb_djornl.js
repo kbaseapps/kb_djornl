@@ -8,9 +8,9 @@ import {
   componentMessageAcknowledge,
   componentMessageLoading,
   componentTippy,
-  componentULLegend,
+  CWSALegend,
+  CWSATable,
   makeTippy,
-  renderTable,
   swapElement,
 } from './app/dom.js';
 import {
@@ -37,7 +37,7 @@ const annotateEdgeFactory = (edgeMetadata) => (edge) => {
   edge.data = {
     ...edge.data,
     bg: colorBg,
-    className: colorClass,
+    className: ['hidden', colorClass].join(' '),
     fg: colorFg,
     label: label,
     scoreRounded: edge.data.score.toFixed(6),
@@ -61,17 +61,15 @@ const annotateNode = (node) => {
 };
 /* App render management */
 class Renderer {
-  constructor(render, updateRate) {
-    this.updateLast = new Date(0);
-    this.updateRate = updateRate;
-    this.updateTimer = null;
+  constructor(render) {
+    this.frameRequest = null;
     this.render = render;
   }
   requestRender(...args) {
     // ideally only render on animation frames
     // but render management needs more sophistication
-    clearTimeout(this.updateTimer);
-    this.updateTimer = setTimeout(() => this.render(...args), this.updateRate);
+    cancelAnimationFrame(this.frameRequest);
+    this.frameRequest = requestAnimationFrame(() => this.render(...args));
   }
 }
 /* App state management */
@@ -179,8 +177,9 @@ const loadMetadata = async () => {
    */
   const ref = `${wsid}/${metadata.objid}/1`;
   return {
-    nodesMeta: metadata.nodes,
     edgesMeta: metadata.edges,
+    layers: metadata.layers,
+    nodesMeta: metadata.nodes,
     stateWSRef: ref,
     wsurl: metadata.wsurl,
   };
@@ -208,6 +207,8 @@ const main = ({ appState }) => {
     edges,
     edgeMetadata,
     highlight,
+    layers,
+    layersVisible,
     layout,
     loading,
     manifest,
@@ -234,10 +235,6 @@ const main = ({ appState }) => {
     messageContainer.querySelectorAll('button')[0].focus();
     return;
   }
-  /* Convert graph data to cytoscape format.  */
-  const annotateEdge = annotateEdgeFactory(edgeMetadata);
-  const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
-  const nodesCytoscape = nodes.map((node) => annotateNode(node));
   let useLayout = cytoscapeLayout;
   if (!layout) {
     useLayout = { name: 'preset' };
@@ -248,6 +245,10 @@ const main = ({ appState }) => {
   const cyDOM = document.getElementById('cy');
   let cy = window.cy;
   if (!cy.nodes || cy.nodes().length === 0) {
+    /* Convert graph data to cytoscape format.  */
+    const annotateEdge = annotateEdgeFactory(edgeMetadata);
+    const edgesCytoscape = edges.map((edge) => annotateEdge(edge));
+    const nodesCytoscape = nodes.map((node) => annotateNode(node));
     cy = cytoscape({
       container: cyDOM,
       elements: { nodes: nodesCytoscape, edges: edgesCytoscape },
@@ -275,19 +276,29 @@ const main = ({ appState }) => {
       console.log('cytoscape instance', cy); // eslint-disable-line no-console
     }
   }
+  /* cy.nodes exists and there is at least one node */
+  /* update graph based on state */
+  cy.edges().forEach((edge) => {
+    edge.removeClass('hidden');
+    if (layersVisible.indexOf(edge.data().edgeType) === -1) {
+      edge.addClass('hidden');
+    }
+  });
   /* add extra DOM */
   // ul#legend
   const legend = document.getElementById('legend');
-  const legendNew = componentULLegend({
+  const legendNew = CWSALegend({
+    appState,
     edgeMetadata,
+    layers,
+    layersVisible,
     manifest,
     colorClasses: ColorClassAssigned,
-    cytoscapeInstance: cy,
   });
   swapElement(legend, legendNew);
   // table#node-data
   const table = document.getElementById('node-data');
-  const tableNew = renderTable({ appState, table, highlight, cytoscapeInstance: cy });
+  const tableNew = CWSATable({ appState, table, highlight, cytoscapeInstance: cy });
   swapElement(table, tableNew);
 };
 // Load manifest, graph and state information from the workspace.
@@ -344,7 +355,7 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     kbase_session: cookies.kbase_session, // eslint-disable-line camelcase
   });
   /* Initialize renderer. */
-  const appRenderer = new Renderer((appState) => main({ appState }), 50);
+  const appRenderer = new Renderer((appState) => main({ appState }));
   /* Initialize appState. */
   const appState = new State(
     {
@@ -353,6 +364,8 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
       edgeMetadata: {},
       highlight: null,
       layout: true,
+      layers: [],
+      layersVisible: [],
       loading: false,
       manifest: {
         file_list: [], // eslint-disable-line camelcase
@@ -364,13 +377,11 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
       stateWSRef: '',
     },
     /* Render the graph when appState.state is updated. */
-    (appState) => {
-      appRenderer.requestRender(appState);
-    }
+    (appState) => appRenderer.requestRender(appState)
   );
   /* loading metadata */
   appState.setState({ loading: true });
-  const { nodesMeta, edgesMeta, stateWSRef, wsurl } = await loadMetadata();
+  const { edgesMeta, layers, nodesMeta, stateWSRef, wsurl } = await loadMetadata();
   wof.setURL(wsurl);
   wof.setRef(stateWSRef);
   /* metadata checks */
@@ -382,6 +393,8 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     ].join(' ');
     const graphIsLargeCallback = async () => {
       appState.setState({
+        layers,
+        layersVisible: layers,
         loading: true,
         message: '',
         messageCallback: () => {},
@@ -390,9 +403,11 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     };
     /* Stop loading and prompt user to load large graph. */
     appState.setState({
+      layers,
+      layersVisible: layers,
+      loading: false,
       message: graphIsLargeMessage,
       messageCallback: graphIsLargeCallback,
-      loading: false,
     });
     return;
   }

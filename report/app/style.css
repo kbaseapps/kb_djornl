@@ -103,7 +103,7 @@ ul._tippy input[type=checkbox] + label span.alt {
 }
 
 #legend::before {
-  content: "Legend";
+  content: "Networks";
   display: block;
   font-size: 150%;
   font-weight: bold;

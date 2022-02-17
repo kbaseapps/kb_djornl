@@ -7,6 +7,12 @@ extends:
   - 'eslint:recommended'
   - prettier
   - 'plugin:prettier/recommended'
+overrides:
+  - files: '*.json'
+    plugins:
+      - 'json'
+    extends:
+      - 'plugin:json/recommended'
 parserOptions:
     ecmaVersion: 2018
     sourceType: module
