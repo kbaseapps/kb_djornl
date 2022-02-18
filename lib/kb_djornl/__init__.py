@@ -79,6 +79,13 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
             ws_name=ws_name,
         ),
     )
+
+    def artifact_path(artifact):
+        """Return metrics and summary output file path."""
+        return os.path.join(
+            reports_path, f"data/RWR-CV__report_{multiplex}_default.{artifact}.tsv"
+        )
+
     # create report object
     html_links = [
         {
@@ -95,6 +102,16 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
             "description": "medianranks",
             "name": "medianranks.tsv",
             "path": medianranks_path,
+        },
+        {
+            "description": "metrics",
+            "name": "metrics.tsv",
+            "path": artifact_path("metrics"),
+        },
+        {
+            "description": "summary",
+            "name": "summary.tsv",
+            "path": artifact_path("summary"),
         },
     ]
     report_info = report.create_extended_report(
