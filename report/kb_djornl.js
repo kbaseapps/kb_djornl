@@ -329,13 +329,15 @@ const loadGraphAssets = async (wof) => {
   return [edges, edgeMetadata, layout, manifest, nodes];
 };
 // Load graph and workspace data and initialize state.
-const loadAndRenderGraph = async (appState, stateWSRef) => {
+const loadAndRenderGraph = async (appState, layers, stateWSRef) => {
   const { wof } = appState.state;
   const [edges, edgeMetadata, layout, manifest, nodes] = await loadGraphAssets(wof);
   appState.setState({
     edges,
     edgeMetadata,
     layout,
+    layers,
+    layersVisible: layers,
     manifest,
     nodes,
     stateWSRef,
@@ -399,7 +401,7 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
         message: '',
         messageCallback: () => {},
       });
-      await loadAndRenderGraph(appState, stateWSRef);
+      await loadAndRenderGraph(appState, layers, stateWSRef);
     };
     /* Stop loading and prompt user to load large graph. */
     appState.setState({
@@ -411,5 +413,5 @@ const loadAndRenderGraph = async (appState, stateWSRef) => {
     });
     return;
   }
-  await loadAndRenderGraph(appState, stateWSRef);
+  await loadAndRenderGraph(appState, layers, stateWSRef);
 })();
