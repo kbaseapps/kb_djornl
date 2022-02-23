@@ -103,7 +103,7 @@ Network files are located on the [kbase exascale_data repository](https://github
 | **const** | AT-UU-RP-03-AA-01 |
 |:---------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Version** | 0.3 |
-| **Description** | This network contains computationally predicted[g] TF-Target relationships based on motifs, binding sites, ChipSeq data |
+| **Description** | This network contains computationally predicted TF-Target relationships based on motifs, binding sites, ChipSeq data |
 | **DOI** | https://doi.org/10.1093/nar/gkz1020 |
 | **# Edges** | 167,851 |
 | **# Nodes** | 16,014 |
@@ -115,7 +115,7 @@ Network files are located on the [kbase exascale_data repository](https://github
 | **Const** | AT-UU-DU-67-AA-01 |
 |:---------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Version** | 0.1 |
-| **Description** | GeneA connects to GeneB if a SNP in or near GeneA is correlated with a SNP in or near GeneB using the [DUO metric](https://doi.org/10.1101/2020.01.28.923730). SNP data is from the full 1001 Genomes. SNPs were mapped to nearest genes (left/right) so that edges are all gene to gene. |
+| **Description** | GeneA connects to GeneB if a SNP in or near GeneA is correlated with a SNP in or near GeneB using the DUO metric. SNP data is from the full 1001 Genomes. SNPs were mapped to nearest genes (left/right) so that edges are all gene to gene. |
 | **DOI** | https://doi.org/10.1101/2020.01.28.923730 |
 | **# Edges** | 13,514 |
 | **# Nodes** | 2,283 |
