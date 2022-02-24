@@ -16,7 +16,8 @@
 
 div.kb-html-report .flow-h {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
+  min-width: 800px;
 }
 
 div.kb-html-report .flow-h.wide {
@@ -76,7 +77,12 @@ ul._tippy input[type=checkbox] + label span.alt {
   border-radius: 4px;
   display: block;
   height: var(--app-height);
-  width: var(--app-width);
+  min-width: var(--app-width);
+  width: 100%;
+}
+
+#controls {
+  overflow-y: scroll;
 }
 
 #extra {
@@ -141,6 +147,105 @@ ul._tippy input[type=checkbox] + label span.alt {
 #legend li {
   display: flex;
   justify-content: space-between;
+}
+
+#legend-ranks {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  margin: 1em;
+}
+
+#legend-ranks .labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#legend-ranks .labels ol {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#legend-ranks .labels li:nth-child(1), #legend-ranks .labels li:nth-child(2) {
+  background-color: #fff;
+  color: #000;
+  display: block;
+  width: auto;
+}
+
+#legend-ranks .seed {
+  border-radius: 5px;
+  padding: .1em .5em;
+  margin: 0 auto 0 1em;
+}
+
+#legend-ranks ol {
+  display: flex;
+  margin: 0px auto;
+  padding-inline-start: 0;
+}
+
+#legend-ranks li {
+  display: block;
+  height: 2em;
+  width: 1.5em;
+}
+
+#legend-ranks span:nth-child(1), #legend-ranks span:nth-child(4) {
+  font-weight: bold;
+  width: 100%;
+}
+
+#legend-ranks li:nth-child(1) {
+  background: var(--cyanobacteria_teal);
+  border-radius: 5px 0 0 5px;
+}
+
+#legend-ranks li:nth-child(2) {
+  background: #129c91;
+}
+
+#legend-ranks li:nth-child(3) {
+  background: #24a39b;
+}
+
+#legend-ranks li:nth-child(4) {
+  background: #36a9a4;
+}
+
+#legend-ranks li:nth-child(5) {
+  background: #48afad;
+}
+
+#legend-ranks li:nth-child(6) {
+  background: #5ab5b6;
+}
+
+#legend-ranks li:nth-child(7) {
+  background: #6dbcc0;
+}
+
+#legend-ranks li:nth-child(8) {
+  background: #7fc2c9;
+}
+
+#legend-ranks li:nth-child(9) {
+  background: #91c8d2;
+}
+
+#legend-ranks li:nth-child(10) {
+  background: #a3cedb;
+}
+
+#legend-ranks li:nth-child(11) {
+  background: #b5d5e5;
+}
+
+#legend-ranks li:nth-child(12) {
+  background: var(--frost_blue);
+  border-radius: 0 5px 5px 0;
 }
 
 #messages {

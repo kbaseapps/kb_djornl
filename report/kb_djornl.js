@@ -320,7 +320,7 @@ const loadGraphAssets = async (wof) => {
   let layout = true;
   if (debugMetadata) {
     console.log('debugMetadata', debugMetadata); //eslint-disable-line no-console
-    return [edges, layout, manifest, nodes];
+    return [edges, edgeMetadata, layout, manifest, nodes];
   }
   if (storedNodes.length === nodes.length) {
     nodes = storedNodes;
