@@ -1,6 +1,8 @@
 """ kb_djornl utils """
+# pylint: disable=logging-fstring-interpolation
 import configparser
 import json
+import logging
 import os
 import sqlite3
 import subprocess
@@ -31,8 +33,8 @@ def create_tair10_featureset(
     genes_unmatched = set(genes).difference(genes_found)
     if len(genes_unmatched) > 0:
         genes_unmatched_str = ", ".join(genes_unmatched)
-        print(
-            """WARNING: The following genes were not found in the genome: """
+        logging.warning(
+            """The following genes were not found in the genome: """
             f"""{genes_unmatched_str}"""
         )
     new_feature_set = dict(
@@ -103,7 +105,7 @@ def fork_rwr_cv(reports_path, params, dfu):
         rwrtools_env["RWR_TOOLS_REPO"] = rwrtools_data_path
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
-    ] = f"""Rscript RWR_CV.R
+    ] = f"""Rscript inst/scripts/run_cv.R
                 --data='multiplexes/{cv_multiplex}'
                 --geneset='{geneset_path}'
                 --method='{cv_method}'
@@ -111,6 +113,7 @@ def fork_rwr_cv(reports_path, params, dfu):
                 --restart='{cv_restart}'
                 --tau='{cv_tau}'
                 --numranked='1'
+                --outdir='/opt/work/tmp'
                 --out-fullranks='/opt/work/tmp/fullranks.tsv'
                 --out-medianranks='/opt/work/tmp/medianranks.tsv'
                 --verbose
@@ -139,26 +142,27 @@ def fork_rwr_loe(reports_path, params, dfu):  # pylint: disable=too-many-locals
     gene_keys2 = []
     if "targets_featureset_ref" in params and params["targets_featureset_ref"]:
         gene_keys2 = get_genes_from_tair10_featureset(targets_featureset_ref, dfu)
-    second_geneset = ""
+    query_geneset = ""
     if gene_keys2:
         geneset2_path = os.path.join(reports_path, "geneset2.tsv")
         with open(geneset2_path, "w") as geneset2_file:
             geneset2_file.write(genes_to_rwr_tsv(gene_keys2))
-        second_geneset = f"--geneset2='{geneset2_path}'"
+        query_geneset = f"--query_geneset='{geneset2_path}'"
     rwrtools_env = dict(os.environ)
     rwrtools_data_path = "/data/RWRtools"
     if os.path.isdir(rwrtools_data_path):
         rwrtools_env["RWR_TOOLS_REPO"] = rwrtools_data_path
     rwrtools_env[
         "RWR_TOOLS_COMMAND"
-    ] = f"""Rscript RWR_LOE.R
+    ] = f"""Rscript inst/scripts/run_loe.R
                 --data='multiplexes/{loe_multiplex}'
-                --geneset1='{geneset_path}'
-                {second_geneset}
+                --seed_geneset='{geneset_path}'
+                {query_geneset}
                 --restart='{loe_restart}'
                 --tau='{loe_tau}'
                 --numranked='1'
-                --out-path='/opt/work/tmp/ranks.tsv'
+                --modname=''
+                --outdir='/opt/work/tmp/'
                 --verbose
     """
     subprocess.run(
@@ -195,6 +199,14 @@ def load_manifest():
     with open(manifest_path) as manifest_file:
         manifest = yaml.safe_load(manifest_file)
     return manifest
+
+
+def load_multiplexes():
+    """Load the multiplex definitions"""
+    multiplexes_path = os.path.join("/kb/module/data/multiplexes.json")
+    with open(multiplexes_path) as multiplexes_file:
+        multiplexes = json.load(multiplexes_file)
+    return multiplexes
 
 
 def normalized_node_id(node_id):
@@ -239,6 +251,8 @@ def put_graph_metadata(metadata, config):  # pylint: disable=too-many-locals
     Create a workspace state object.
     """
     dfu = config["dfu"]
+    layers = config["layers"]
+    multiplex = config["multiplex"]
     report_name = config["report_name"]
     reports_path = config["reports_path"]
     ws_name = config["ws_name"]
@@ -259,7 +273,9 @@ def put_graph_metadata(metadata, config):  # pylint: disable=too-many-locals
     }
     report_state = dfu.save_objects(report_state_params)
     report_state_objid = object_info_as_dict(report_state[0])["objid"]
-    # Add extra metadata for the workspace.
+    # Add extra metadata to be used by the report front end.
+    metadata["layers"] = layers
+    metadata["multiplex"] = multiplex
     metadata["objid"] = report_state_objid
     metadata["wsurl"] = get_wsurl()
     # Save graph metadata.
@@ -359,7 +375,7 @@ def query_sqlite(genes):  # pylint: disable=too-many-locals
 
     def node_shadow(node_id, nodes_data):
         if node_id not in nodes_data:
-            print(f"MISSING METADATA FOR {node_id}")
+            logging.warning(f"MISSING METADATA FOR {node_id}")
         return dict(
             _id=tmpl_id.format(node_id),
             defline="missing metadata",

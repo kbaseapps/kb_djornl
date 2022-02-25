@@ -2,6 +2,10 @@
 
 This directory contains reference data required for this module to run.
 
+## multiplexes.json
+
+This file defines the layers contained in each multiplex network.
+
 ## rwrtools.yml
 
 The conda environment description to run RWRtools. This will go away once

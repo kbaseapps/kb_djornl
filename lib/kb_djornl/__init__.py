@@ -15,6 +15,7 @@ from .utils import (
     fork_rwr_loe,
     genes_to_rwr_tsv,
     load_manifest,
+    load_multiplexes,
     put_graph_metadata,
     query_subgraph,
 )
@@ -65,15 +66,26 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
     report_name = f"kb_rwr_cv_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
+    multiplex = params["multiplex"]
+    layers = load_multiplexes()[multiplex]
     put_graph_metadata(
         graph_metadata,
         dict(
             dfu=dfu,
+            layers=layers,
+            multiplex=multiplex,
             report_name=report_name,
             reports_path=reports_path,
             ws_name=ws_name,
         ),
     )
+
+    def artifact_path(artifact):
+        """Return metrics and summary output file path."""
+        return os.path.join(
+            reports_path, f"data/RWR-CV__report_{multiplex}_default.{artifact}.tsv"
+        )
+
     # create report object
     html_links = [
         {
@@ -90,6 +102,16 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
             "description": "medianranks",
             "name": "medianranks.tsv",
             "path": medianranks_path,
+        },
+        {
+            "description": "metrics",
+            "name": "metrics.tsv",
+            "path": artifact_path("metrics"),
+        },
+        {
+            "description": "summary",
+            "name": "summary.tsv",
+            "path": artifact_path("summary"),
         },
     ]
     report_info = report.create_extended_report(
@@ -127,7 +149,7 @@ def run_rwr_loe(
     node_rank_max = int(params.get("node_rank_max", 10))
     # Run RWR_LOE with the given parameters
     gene_keys, gene_keys2 = fork_rwr_loe(reports_path, params, dfu)
-    tsv_out = "data/ranks.tsv"
+    tsv_out = "data/RWR-LOE_report_.ranks.tsv"
     output_path = os.path.join(reports_path, tsv_out)
     shutil.copytree(
         "/opt/work/tmp/",
@@ -155,10 +177,14 @@ def run_rwr_loe(
     report_name = f"kb_rwr_loe_report_{str(uuid.uuid4())}"
     # Save graph metadata to a file in the report.
     ws_name = params["workspace_name"]
+    multiplex = params["multiplex"]
+    layers = load_multiplexes()[multiplex]
     put_graph_metadata(
         graph_metadata,
         dict(
             dfu=dfu,
+            layers=layers,
+            multiplex=multiplex,
             report_name=report_name,
             reports_path=reports_path,
             ws_name=ws_name,

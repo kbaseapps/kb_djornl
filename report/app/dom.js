@@ -253,10 +253,12 @@ const componentNetworkTippy = ({ edgeTypeMeta, edgemani }) => {
 const componentNetworkVisibilityToggle = ({
   edgeType,
   edgeTypeName,
+  layersVisible,
   toggleVisibility,
 }) => {
   const checkboxVisibility = document.createElement('input');
   checkboxVisibility.type = 'checkbox';
+  checkboxVisibility.checked = layersVisible.indexOf(edgeType) === -1;
   checkboxVisibility.addEventListener('change', toggleVisibility(edgeType));
   const slug = edgeTypeName.split(' ')[0];
   const checkboxVisibilityName = `${slug}-visibility`;
@@ -270,6 +272,8 @@ const componentNetworkZone = ({
   edgeMetadata,
   edgeType,
   edgeTypeToggleVisibility,
+  layers,
+  layersVisible,
   manifest,
 }) => {
   const edgemani = Object.fromEntries(
@@ -288,8 +292,10 @@ const componentNetworkZone = ({
       title: unknown,
     };
   };
+  const networkInMultiplex = layers.indexOf(edgeType) > -1;
+  const ast = networkInMultiplex ? '' : ' *';
   const edgeTypeMeta = edgeMetadata[edgeType] || edgeTypeMetaDefault(edgeType);
-  const edgeTypeName = edgeTypeMeta.title || edgeType;
+  const edgeTypeName = (edgeTypeMeta.title || edgeType) + ast;
   const label = document.createElement('label');
   const li = document.createElement('li');
   const span = document.createElement('span');
@@ -303,6 +309,7 @@ const componentNetworkZone = ({
   const checkboxVisibility = componentNetworkVisibilityToggle({
     edgeType,
     edgeTypeName,
+    layersVisible,
     toggleVisibility: edgeTypeToggleVisibility,
   });
   li.append(checkboxVisibility);
@@ -366,34 +373,6 @@ export const componentTippy = ({ data }) => {
   tippyItems.forEach((item) => ul.appendChild(item));
   return ul;
 };
-export const componentULLegend = ({
-  cytoscapeInstance,
-  colorClasses,
-  edgeMetadata,
-  manifest,
-}) => {
-  const legend = document.createElement('ul');
-  legend.id = 'legend';
-  const edgeTypeToggleVisibility = (edgeType) => () => {
-    cytoscapeInstance
-      .edges()
-      .filter((edge) => edge.data().edgeType === edgeType)
-      .forEach((edge) => edge.toggleClass('hidden'));
-  };
-  // legend
-  Object.entries(colorClasses)
-    .map(([edgeType, colorClass]) =>
-      componentNetworkZone({
-        colorClass,
-        edgeMetadata,
-        edgeType,
-        edgeTypeToggleVisibility,
-        manifest,
-      })
-    )
-    .forEach((item) => legend.appendChild(item));
-  return legend;
-};
 /* ui cells */
 export const makeTippy = (ele, fragment) => {
   const ref = ele.popperRef();
@@ -430,7 +409,46 @@ export const swapElement = (original, replacement) => {
   ];
   parentDOM.replaceChildren(...childrenNew);
 };
-export const renderTable = ({ table, cytoscapeInstance, highlight, appState }) => {
+/* Components With State Action (CWSA) */
+/* Users can use actions exposed by the following CWSA components to modify the app
+state. */
+export const CWSALegend = ({
+  appState,
+  colorClasses,
+  edgeMetadata,
+  layers,
+  layersVisible,
+  manifest,
+}) => {
+  const legend = document.createElement('ul');
+  legend.id = 'legend';
+  const edgeTypeToggleVisibility = (edgeType) => () => {
+    const layersVisibleNext = [
+      ...layersVisible
+        .filter((layer) => layer !== edgeType)
+        .concat(layersVisible.indexOf(edgeType) > -1 ? [] : [edgeType]),
+    ];
+    appState.setState({
+      layersVisible: layersVisibleNext,
+    });
+  };
+  // legend
+  Object.entries(colorClasses)
+    .map(([edgeType, colorClass]) =>
+      componentNetworkZone({
+        colorClass,
+        edgeMetadata,
+        edgeType,
+        edgeTypeToggleVisibility,
+        layers,
+        layersVisible,
+        manifest,
+      })
+    )
+    .forEach((item) => legend.appendChild(item));
+  return legend;
+};
+export const CWSATable = ({ appState, cytoscapeInstance, highlight, table }) => {
   if (!table) return table;
   const { sort } = appState.state;
   // Collect nodes from cytoscape instance

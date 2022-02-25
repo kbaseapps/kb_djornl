@@ -8,7 +8,10 @@ set +x
 echo Activate rwrtools conda environment
 source /miniconda/etc/profile.d/conda.sh
 conda activate rwrtools
-set -x
 mkdir -p /opt/work/tmp
 cd $RWR_TOOLS_REPO
+R --no-restore --no-save << HEREDOC
+devtools::install()
+HEREDOC
+set -x
 eval $RWR_TOOLS_COMMAND
