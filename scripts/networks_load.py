@@ -58,10 +58,24 @@ def merge_edge_metadata(manifest):
     }
     with open(edge_yaml_path) as edge_yaml_file:
         edge_yaml = yaml.safe_load(edge_yaml_file)
+    citations = {
+        "AT-UU-CD-00-AA-01" : "https://doi.org/10.1093/nar/gku1053",
+        "AT-UU-DU-67-AA-01" : "https://doi.org/10.1101/2020.01.28.923730",
+        "AT-UU-GA-01-AA-01" : "https://doi.org/10.1111/nph.13557",
+        "AT-UU-GO-05-AA-01" : "https://doi.org/10.1093/bioinformatics/btq064",
+        "AT-UU-KS-00-AA-01" : "https://doi.org/10.1186/s13007-015-0053-y",
+        # "AT-UU-PP-00-AA-01" : "",
+        "AT-UU-PX-01-AA-01" : "https://doi.org/10.1016/j.cell.2016.06.044",
+        "AT-UU-PY-01-LF-01" : "https://doi.org/10.1016/j.cell.2016.06.044",
+        "AT-UU-RE-00-AA-01" : "https://doi.org/10.1093/molbev/msv058",
+        "AT-UU-RP-03-AA-01" : "https://doi.org/10.1093/nar/gkz1020",
+        "AT-UU-RX-00-AA-01" : "https://doi.org/10.1104/pp.102.017236",
+    }
     edge_metadata_updates = [
         edge_metadata.get(edge_type["const"], {}).update({
             "description_re": edge_type["description"],
-            "title_re": edge_type["title"]
+            "title_re": edge_type["title"],
+            "cite": citations.get(edge_type["const"]),
         })
         for edge_type in edge_yaml["oneOf"]
     ]
