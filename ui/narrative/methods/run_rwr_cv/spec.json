@@ -143,6 +143,12 @@
                         "display": "loo",
                         "id": "loo",
                         "ui-name": "loo"
+                    },
+                    {
+                        "value": "singletons",
+                        "display": "singletons",
+                        "id": "singletons",
+                        "ui-name": "singletons"
                     }
                 ]
             }
