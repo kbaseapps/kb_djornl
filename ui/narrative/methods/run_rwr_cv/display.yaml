@@ -4,10 +4,8 @@
 name: RWRtools CV
 
 tooltip: |
-    RWR Cross Validation performs K-fold cross validation on a single gene
-        set, finding the RWR rank of the left-out genes. Can choose either
-        leave-one-out to leave only one gene from the gene set out and
-        find its rank, or k-fold cross-validation.
+    RWRtools CV (Cross Validation) performs cross validation on a single gene
+        set, finding the RWR rank of the left-out genes.
 
 screenshots: []
 
@@ -21,20 +19,21 @@ parameters :
         ui-name : |
             Seed Gene Keys
         short-hint : |
-            Feature Set of A. thaliana seed genes
+            Feature set of A. thaliana seed genes of interest.
     multiplex:
         ui-name : |
             Multiplex
         short-hint : |
             Choose a pre-built multiplex network based on types of experimental
-                evidence you would like incorporated in your analysis, such as
-                protein-protein interactions, metabolic reactions, transcription
-                factor regulation, and gene co-expression.
+                evidence you would like incorporated in your analysis.  
+                Descriptions of multiplexes are located
+                <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.
+                Default is the Comprehensive Network (9 network layers).
     node_rank_max:
         ui-name : |
             Maximum node rank
         short-hint : |
-            Include the top ranked nodes up to this maximum
+            Include the top ranked nodes up to this maximum (default = 10).
     output_name:
         ui-name: |
             Output Feature Set Name
@@ -45,33 +44,39 @@ parameters :
         ui-name: |
             Description
         short-hint: |
-            A short description of the interpretation of the outupt genes.
+            A short description of the interpretation of the output genes.
     method:
         ui-name : |
             Method
         short-hint : |
-            Cross-validation method.
+            Cross-validation method. Methods include k-fold (default method with 5 folds),
+            leave-one-out (loo) (leave only one gene from the gene set out and use 
+            other genes to find its rank), or singletons (where one gene is used to 
+            find the ranks of all other genes in the gene set).
     folds:
         ui-name : |
             Number of folds
         short-hint : |
-            Number (k) of folds to use in k-fold CV
+            Number (k) of folds to use in k-fold CV (default = 5).
     restart:
         ui-name : |
             Restart probability
         short-hint : |
             Higher values means the walker will jump back to a seed node more
-            often.
+            often (default = 0.7).
     tau:
         ui-name : |
             Tau
         short-hint : |
             A comma-separated list of values that must add up to the number of
             network layers. One value per network layer that determines the
-            probability that the random walker will restart in that layer.
+            probability that the random walker will restart in that layer (default 
+            = 1 per layer).
 
 description : |
-    <p><b>RWR Cross Validation</b> performs K-fold cross validation on a single
-        gene set, finding the RWR rank of the left-out genes. Can choose either
-        leave-one-out to leave only one gene from the gene set out and find its
-        rank, or k-fold cross-validation.</p>
+    <p><b>RWRtools CV (Cross Validation)</b> performs cross validation on a single
+        gene set, finding the Random Walk with Restart (RWR) rank of the left-out 
+        genes. Cross validation methods include <b>k-fold</b> (default method, k = 5),
+        <b>leave-one-out (loo)</b> (leave only one gene from the gene set out 
+        and use other genes to find its rank), or <b>singletons</b> (one 
+        gene is used to find the ranks of all other genes in the gene set).</p>
