@@ -20,27 +20,6 @@ PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
 test -f /data/exascale_data/networks.db && rm /data/exascale/networks.db
 /kb/module/scripts/networks_load.py
 # Retrieve RWR tools and data
-# Determine environment
-KB_ENV=$(grep -e kbase_endpoint /kb/module/work/config.properties \
-    | cut -f3 -d'/' | cut -f1 -d. \
-)
-echo Detected environment $KB_ENV
-if [[ "$KB_ENV" == 'kbase' ]]; then
-    RWRTOOLS_BLOB_URL='https://kbase.us/services/shock-api/node/872033a7-2476-48e5-8ae0-afa2622376ab?download_raw'
-elif [[ "$KB_ENV" == 'ci' ]]; then
-    RWRTOOLS_BLOB_URL='https://ci.kbase.us/services/shock-api/node/c450f36f-c435-40c8-889e-2c43b1a4d270?download_raw';
-elif [[ "$KB_ENV" == 'appdev' ]]; then
-    RWRTOOLS_BLOB_URL='https://appdev.kbase.us/services/shock-api/node/403cef42-7e23-4160-a73f-0f3c26a878e5?download_raw';
-fi
-# Retrieve RWR tools and data
-mkdir -p /data/RWRtools
-curl -fsSL -H "Authorization: OAuth $KB_AUTH_TOKEN " \
-  -o /data/RWRtools/RWRtools.tar.gz $RWRTOOLS_BLOB_URL
-cd /data/RWRtools
-tar xzvf RWRtools.tar.gz
-source /miniconda/etc/profile.d/conda.sh
-conda activate rwrtools
-R --no-restore --no-save << HEREDOC
-devtools::install()
-HEREDOC
+git clone https://github.com/dkainer/RWRtoolkit.git /data/RWRtools
+git clone https://github.com/dkainer/RWRtoolkit-data.git /data/RWRtools/multiplexes
 touch /data/__READY__
