@@ -20,7 +20,7 @@ You can also learn more about the apps implemented in this module from its
 [kb-sdk-docs]: https://kbase.github.io/kb_sdk_docs/
 [kb_djornl-catalog]: https://narrative.kbase.us/#catalog/modules/kb_djornl
 
-### RWRtools CV
+### RWRtoolkit CV
 
 This app wraps the RWR Cross Validation tool which performs k-fold cross
 validation on a single gene set, finding the RWR rank of the left-out genes.
@@ -28,7 +28,7 @@ One can choose either leave-one-out to leave only one gene from the gene set
 out and find its rank, or run k-fold cross-validation for a specified value
 of k.
 
-### RWRtools LOE
+### RWRtoolkit LOE
 
 This app wraps the RWR Lines of Evidence tool which has two possible functions.
 Given one geneset of seeds, rankings for all other genes in the network will
@@ -103,11 +103,11 @@ cp scripts/pre-commit.sh .git/hooks/pre-commit
 The instructions in this section refer to the following external repositories:
 - Data: [`exascale_data`][repo-exascale]
 - Relation Engine (RE): [`relation_engine`][repo-re]
-- The [`RWRtools`][repo-rwrtools] repository.
+- The [`RWRtoolkit`][repo-rwrtoolkit] repository.
 
 [repo-exascale]: https://github.com/kbase/exascale_data
 [repo-re]: https://github.com/kbase/relation_engine
-[repo-rwrtools]: https://github.com/dkainer/RWRtools
+[repo-rwrtoolkit]: https://github.com/dkainer/RWRtoolkit
 
 ## Test a new version of the app
 
@@ -159,95 +159,6 @@ header row. It also assumes that this network introduces a single new
         will ensure that the refdata is loaded in the next step.
     4. Commit these changes to the repository in GitHub.
 4. Test this new version of the app.
-
-## Update RWRtools
-
-The RWRtools are currently contained in a private repository. To work around
-this, we create a blobstore object containing the latest version of the
-repository and download that at refdata update time.
-
-The following assumes:
-- No new dependencies have been added to `RWRtools`.
-    - If the dependencies have changed then the Conda environment within the
-        container will have to be adjusted. See
-        [`data/rwrtools.yml`](data/rwrtools.yml).
-- No change in options taken by `RWRtools` scripts.
-    - If options change then the calls to `RWRtools` from the app will need to
-        be updated.
-
-1. Create the `RWRtools` blobstore object and get its blobstore object URL,
-    referred to here as `node_url`. See more detailed instructions below.
-    1. Make a shallow clone of the `RWRtools` repository's `dev` branch.
-    2. Run a `DataFileUtil` container to package and upload the code.
-    3. Once in the `DataFileUtil` container start an ipython session.
-    4. Use DataFileUtil to upload the repository. You should now have the
-        `node_url`.
-2. Copy the `node_url` into the `curl` in
-    [`scripts/refdata-load.sh`](scripts/refdata-load.sh)
-3. Remove the local `__READY__` file.
-```rm test_local/refdata/__READY__```
-4. Run `kb-sdk test` to reload the refdata.
-5. If all is working as planned then update the data version in `kbase.yml`,
-    commit these changes and reregister the app.
-6. Test this new version of the app.
-
-### Create `RWRtools` blobstore object and get its `node_url`
-1. Clone `DataFileUtil` and change directory into it
-```bash
-git clone git@github.com:kbaseapps/DataFileUtil.git
-cd DataFileUtil
-```
-2. Make a shallow clone of the `RWRtools` repository's `dev` branch.
-```bash
-git clone --branch dev --depth 1 git@github.com:dkainer/RWRtools.git RWRtools.shallow
-```
-3. Run `kb-sdk test` to build the DataFileUtil image. You may have to put your
-token in `test_local/test.cfg` and run `kb-sdk test` again if this is the first
-time building the image.
-4. Run a `DataFileUtil` container to package and upload the code.
-```bash
-docker run -it test/datafileutil bash
-```
-5. Once in the `DataFileUtil` container run the following commands
-```bash
-cd lib
-ipython
-```
-6. In the ipython session run the commands below. Set the token to a valid
-    token for the environment, here `appdev` is used as an example.
-```python
-from DataFileUtil.DataFileUtilImpl import DataFileUtil
-token = your_token_here
-env = 'appdev'
-dfu = DataFileUtil({
-    'kbase-endpoint': f'https://{env}.kbase.us/services',
-    'handle-service-url': f'https://{env}.kbase.us/services/handle_service',
-    'pigz_n_processes': 1,
-    'pigz_compression_level': 1,
-    'scratch': '.',
-    'shock-url': f'https://{env}.kbase.us/services/shock-api',
-    'workspace-url': f'https://{env}.kbase.us/services/ws',
-})
-node = dfu.file_to_shock(
-    {'token': token},
-    {
-        'file_path': '/kb/module/RWRtools.shallow/',
-        'make_handle': 1,
-        'pack': 'targz'
-    }
-)
-node_url = f"""{dfu.shock_url}/node/{node[0]["shock_id"]}?download_raw"""
-print(f'node_url: {node_url}')
-```
-
-## Add new dependencies for `RWRtools`
-
-1. Save the `RWRtools` [environment.yml][rwrtools-environment] file as
-    [`data/rwrtools.yml`](data/rwrtools.yml).
-2. Follow instructions above to update `RWRtools`.
-
-[rwrtools-environment]: https://github.com/dkainer/RWRtools/blob/dev/environment.yml
-
 
 ## View a sample report generated by the tests
 
