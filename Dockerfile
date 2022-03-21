@@ -6,6 +6,7 @@ RUN apt-get upgrade -y
 RUN mkdir -p /kb/module/work
 WORKDIR /kb/module
 # Python and R requirements
+ENV PIP_PROGRESS_BAR=off
 RUN conda update -n base -c defaults conda
 COPY ./scripts/rwrtools-env-create.sh /kb/module/scripts/rwrtools-env-create.sh
 RUN ./scripts/rwrtools-env-create.sh
