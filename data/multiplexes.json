@@ -1,9 +1,11 @@
 {
   "Comprehensive_Network_AT_d0.5_v02.RData": [
+    "AT-UU-DU-67-AA-01",
     "AT-UU-GA-01-AA-01",
     "AT-UU-KS-00-AA-01",
     "AT-UU-PP-00-AA-01",
     "AT-UU-PX-01-AA-01",
+    "AT-UU-PY-01-LF-01",
     "AT-UU-RE-00-AA-01",
     "AT-UU-RP-03-AA-01",
     "AT-UU-RX-00-AA-01"
@@ -19,7 +21,7 @@
     "AT-UU-RE-00-AA-01"
   ],
   "GO_AT_d0.5_v01.RData": [
-    "AT-UU-GO-03-AA-01"
+    "AT-UU-GO-05-AA-01"
   ],
   "High_Confidence_AT_d0.5_v01.RData": [
     "AT-UU-KS-00-AA-01",
@@ -32,7 +34,7 @@
   ],
   "Ontology_AT_d0.5_v01.RData": [
     "AT-UU-KS-00-AA-01",
-    "AT-UU-GO-03-AA-01"
+    "AT-UU-GO-05-AA-01"
   ],
   "Predicted_Regulation_AT_d0.5_v02.RData": [
     "AT-UU-GA-01-AA-01",
@@ -42,6 +44,7 @@
   ],
   "Unknown_Function_AT_d0.5_v01.RData": [
     "AT-UU-CD-00-AA-01",
+    "AT-UU-DU-67-AA-01",
     "AT-UU-PP-00-AA-01",
     "AT-UU-RX-00-AA-01"
   ]
