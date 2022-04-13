@@ -140,7 +140,7 @@ def fork_rwr_loe(reports_path, params, dfu):  # pylint: disable=too-many-locals
     # Write the second set of genes to a file to be used with RWR_LOE.
     targets_featureset_ref = params.get("targets_feature_set")
     gene_keys2 = []
-    if "targets_featureset_ref" in params and params["targets_featureset_ref"]:
+    if targets_featureset_ref:
         gene_keys2 = get_genes_from_tair10_featureset(targets_featureset_ref, dfu)
     query_geneset = ""
     if gene_keys2:
