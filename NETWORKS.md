@@ -1,5 +1,5 @@
 # Data specification 
-Descriptions provided for both the [Multiplex Networks](#multiplex-networks) and [Invididual Network Layers](#networks).
+Descriptions provided for both the [Multiplex Networks](#multiplex-networks) and [Individual Network Layers](#networks).
 
 ## Multiplex Networks
 Multiplex network files are located on the [RWRtoolkit-data repository](https://github.com/dkainer/RWRtoolkit-data).
