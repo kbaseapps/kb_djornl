@@ -26,8 +26,8 @@ parameters :
         short-hint : |
             Choose a pre-built multiplex network based on types of experimental
                 evidence you would like incorporated in your analysis.  
-                Descriptions of multiplexes are located
-                <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.
+                Descriptions of multiplexes can be found by following the link 
+                in the app description. 
                 Default is the Comprehensive Network (9 network layers).
     node_rank_max:
         ui-name : |
@@ -79,4 +79,6 @@ description : |
         genes. Cross validation methods include <b>k-fold</b> (default method, k = 5),
         <b>leave-one-out (loo)</b> (leave only one gene from the gene set out 
         and use other genes to find its rank), or <b>singletons</b> (one 
-        gene is used to find the ranks of all other genes in the gene set).</p>
+        gene is used to find the ranks of all other genes in the gene set). 
+        Descriptions of provided multiplexes can be found 
+        [here](https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md).</p>
