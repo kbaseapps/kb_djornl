@@ -4,7 +4,7 @@
 name: RWRtools LOE
 
 tooltip: |
-    RWR LOE (Lines of Evidence) uses RWR to rank genes in the network starting from a Feature Set.
+    RWRtools LOE (Lines of Evidence) uses RWR to rank genes in the network starting from a Feature Set.
 
 screenshots: []
 
@@ -31,8 +31,8 @@ parameters :
         short-hint : |
             Choose a pre-built multiplex network based on types of experimental
                 evidence you would like incorporated in your analysis.  
-                Descriptions of multiplexes are located
-                <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.
+                Descriptions of multiplexes can be found by following the 
+                link in the app description. 
                 Default is the Comprehensive Network (9 network layers).
     node_rank_max:
         ui-name : |
@@ -73,4 +73,5 @@ description : |
         returned. Given a second geneset of genes to be queried, rankings for just 
         the genes in that geneset will be returned. This can be used to build 
         multiple lines of evidence from the various input networks to relate the 
-        two gene sets.</p>
+        two gene sets. Descriptions of provided multiplexes can be found 
+        [here](https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md).</p>
