@@ -81,4 +81,4 @@ description : |
         and use other genes to find its rank), or <b>singletons</b> (one 
         gene is used to find the ranks of all other genes in the gene set). 
         Descriptions of provided multiplexes can be found 
-        [here](https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md).</p>
+        <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.</p>

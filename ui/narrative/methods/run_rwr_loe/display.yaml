@@ -74,4 +74,4 @@ description : |
         the genes in that geneset will be returned. This can be used to build 
         multiple lines of evidence from the various input networks to relate the 
         two gene sets. Descriptions of provided multiplexes can be found 
-        [here](https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md).</p>
+        <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.</p>

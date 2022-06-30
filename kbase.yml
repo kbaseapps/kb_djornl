@@ -2,7 +2,7 @@ module-name:
     kb_djornl
 
 module-description:
-    The RWRtools module enables Random Walk with Restart (RWR) on gene-to-gene multiplex networks from multiple lines of evidence. These include protein-protein interactions, metabolic reactions, transcription factor regulation, and gene co-expression. Descriptions of provided multiplexes can be found [here](https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md). RWRtools LOE (Lines of Evidence) performs RWR from one geneset to see how many of another geneset are highly ranked. RWRtools CV (Cross Validation) performs RWR Cross Validation on a single gene set to find the RWR rank of the left-out genes.
+    The RWRtools module enables Random Walk with Restart (RWR) on gene-to-gene multiplex networks from multiple lines of evidence. These include protein-protein interactions, metabolic reactions, transcription factor regulation, and gene co-expression. Descriptions of provided multiplexes can be found <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>. RWRtools LOE (Lines of Evidence) performs RWR from one geneset to see how many of another geneset are highly ranked. RWRtools CV (Cross Validation) performs RWR Cross Validation on a single gene set to find the RWR rank of the left-out genes.
 
 service-language:
     python
