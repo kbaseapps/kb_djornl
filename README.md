@@ -60,14 +60,14 @@ refdata, see the [Howsto](#howsto) section below.
 
 # Contributing
 
-Note: By default the module image uses Python 3.7.0, and these instructions are
+Note: By default the module image uses Python 3.8.10, and these instructions are
 tested with this version, but will probably work with any higher version.
 Follow the following instructions to configure your development environment.
 
 0. Install prerequisites:
     - kb-sdk
-    - node >= 14.15.4
-    - python >= 3.7.0
+    - node >= 20.9.0
+    - python >= 3.8.10
 1. Make a virtual environment and activate it.
 ```
 python -m venv $VENV
@@ -126,7 +126,7 @@ This section specifically refers how to add, edit or replace edges in an
 2. Commit this change to the repository in GitHub.
 3. Modify the `git clone` command for `exascale_data` in
     `scripts/refdata-load.sh` to point to the correct branch or commit.
-4. Bump the `data-version` semantic version value in `kbase.yaml`. This will
+4. Bump the `data-version` semantic version value in `kbase.yml`. This will
     ensure that the refdata is loaded in the next step.
 5. Commit these changes to the `kb_djornl` repository in GitHub.
 6. Test this new version of the app.
@@ -155,7 +155,7 @@ header row. It also assumes that this network introduces a single new
     2. Modify the `git clone` command for `exascale_data` and `relation_engine`
         in `scripts/refdata-load.sh` to point to the correct branch or commit
         for the changes above.
-    3. Bump the `data-version` semantic version value in `kbase.yaml`. This
+    3. Bump the `data-version` semantic version value in `kbase.yml`. This
         will ensure that the refdata is loaded in the next step.
     4. Commit these changes to the repository in GitHub.
 4. Test this new version of the app.
