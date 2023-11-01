@@ -8,10 +8,10 @@ service-language:
     python
 
 module-version:
-    0.0.2
+    1.0.0
 
 owners:
     [dakota]
 
 data-version:
-    0.0.9
+    1.0.0

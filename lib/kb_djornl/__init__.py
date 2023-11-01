@@ -82,8 +82,9 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
 
     def artifact_path(artifact):
         """Return metrics and summary output file path."""
+        multiplex_name = multiplex.replace(".RData", "")
         return os.path.join(
-            reports_path, f"data/RWR-CV__report_{multiplex}_default.{artifact}.tsv"
+            reports_path, f"data/RWR-CV__report_{multiplex_name}_default.{artifact}.tsv"
         )
 
     # create report object
