@@ -1,4 +1,5 @@
 import './style.css';
+import './kbase/css/style.min.css';
 /* KBase colors and cytoscape style */
 const CYANOBACTERIA_TEAL = '#009688';
 const FROST_BLUE = '#c7dbee';
