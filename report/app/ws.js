@@ -1,10 +1,15 @@
 export class Workspace {
   constructor({ kbase_session, url }) {
     this.kbaseSession = kbase_session; // eslint-disable-line camelcase
+    this.status = true;
     this.url = url;
   }
 
   async request(params) {
+    if (!this.kbaseSession) {
+      this.status = false;
+      return;
+    }
     const resp = await fetch(this.url, {
       headers: {
         authorization: this.kbaseSession,
@@ -18,7 +23,7 @@ export class Workspace {
   }
 
   // get workspace info
-  getWorkspaceInfo(wsid) {
+  async getWorkspaceInfo(wsid) {
     const params = {
       params: [
         {
@@ -29,10 +34,10 @@ export class Workspace {
       version: '1.1',
       id: `id${new Date().toISOString()}`,
     };
-    return this.request(params);
+    return await this.request(params);
   }
 
-  listObjects(wsid) {
+  async listObjects(wsid) {
     // list_objects
     const params = {
       params: [
@@ -44,10 +49,19 @@ export class Workspace {
       version: '1.1',
       id: `id${new Date().toISOString()}`,
     };
-    return this.request(params);
+    const response = await this.request(params);
+    // An error indicates the workspace is unreachable for some reason.
+    if (response.error) {
+      const message = response.error.message;
+      // eslint-disable-next-line no-console
+      console.error('The Workspace responded with an error:', message);
+      // Disable subsequent workspace calls.
+      this.status = false;
+    }
+    return response;
   }
 
-  getObjects2(refs) {
+  async getObjects2(refs) {
     // get_objects2
     const objects = refs.map((ref) => ({ ref }));
     const params = {
@@ -56,11 +70,11 @@ export class Workspace {
       version: '1.1',
       id: `id${new Date().toISOString()}`,
     };
-    return this.request(params);
+    return await this.request(params);
   }
 
   // save_objects
-  saveObjects(wsid, objects) {
+  async saveObjects(wsid, objects) {
     const params = {
       params: [
         {
@@ -72,6 +86,6 @@ export class Workspace {
       version: '1.1',
       id: `id${new Date().toISOString()}`,
     };
-    return this.request(params);
+    return await this.request(params);
   }
 }

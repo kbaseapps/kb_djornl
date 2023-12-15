@@ -51,7 +51,7 @@ module.exports = {
   },
   devtool: 'source-map',
   devServer: {
+    allowedHosts: ['.kbase.us', 'localhost'],
     contentBase: path.join(__dirname, 'test_local/workdir/tmp/reports'),
-    host: 'localhost',
   },
 };

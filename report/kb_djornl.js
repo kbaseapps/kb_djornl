@@ -90,6 +90,14 @@ const layoutChangeHandlerFactory = (appState) => {
   let timer;
   const { wof } = appState.state;
   const updateAfter = 1000; // how long to wait before updating position state
+  if (!wof.ws || !wof.ws.status) {
+    return () => {
+      // eslint-disable-next-line no-console
+      const update = () => console.log('State saving is disabled.');
+      clearTimeout(timer);
+      timer = setTimeout(update, updateAfter);
+    };
+  }
   return (evt) => {
     const update = async () => {
       appState.setState({ loading: true });
@@ -352,10 +360,12 @@ const loadAndRenderGraph = async (appState, layers, stateWSRef) => {
   const cookies = Object.fromEntries(
     document.cookie.split('; ').map((cookie) => cookie.split('=', 2))
   );
+  const KBaseSession = cookies.kbase_session
+    ? cookies.kbase_session
+    : cookies.kbase_session_backup;
   /* Instantiate workspace object facade for state persistence. */
-  const wof = new WOF({
-    kbase_session: cookies.kbase_session, // eslint-disable-line camelcase
-  });
+  // eslint-disable-next-line camelcase
+  const wof = new WOF({ kbase_session: KBaseSession });
   /* Initialize renderer. */
   const appRenderer = new Renderer((appState) => main({ appState }));
   /* Initialize appState. */
