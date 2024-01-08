@@ -40,7 +40,7 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
     # Run RWR_CV with the given parameters
     gene_keys, cv_folds = fork_rwr_cv(reports_path, params, dfu)
     fullranks_path = os.path.join(reports_path, "data/fullranks.tsv")
-    medianranks_path = os.path.join(reports_path, "data/medianranks.tsv")
+    meanranks_path = os.path.join(reports_path, "data/meanranks.tsv")
     shutil.copytree(
         "/opt/work/tmp/",
         os.path.join(reports_path, "data"),
@@ -100,9 +100,9 @@ def run_rwr_cv(config, clients):  # pylint: disable=too-many-locals
             "path": fullranks_path,
         },
         {
-            "description": "medianranks",
-            "name": "medianranks.tsv",
-            "path": medianranks_path,
+            "description": "meanranks",
+            "name": "meanranks.tsv",
+            "path": meanranks_path,
         },
         {
             "description": "metrics",

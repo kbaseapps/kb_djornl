@@ -21,5 +21,8 @@ test -f /data/exascale_data/networks.db && rm /data/exascale/networks.db
 /kb/module/scripts/networks_load.py
 # Retrieve RWR tools and data
 git clone https://github.com/dkainer/RWRtoolkit.git /data/RWRtools
+cd /data/RWRtools
+# see also rwrtools-env-create.sh
+git reset --hard 360f33794f7d81c254b7d8d16ef7649d0412f790
 git clone https://github.com/dkainer/RWRtoolkit-data.git /data/RWRtools/multiplexes
 touch /data/__READY__
