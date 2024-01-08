@@ -115,7 +115,7 @@ def fork_rwr_cv(reports_path, params, dfu):
                 --numranked='1'
                 --outdir='/opt/work/tmp'
                 --out-fullranks='/opt/work/tmp/fullranks.tsv'
-                --out-medianranks='/opt/work/tmp/medianranks.tsv'
+                --out-meanranks='/opt/work/tmp/meanranks.tsv'
                 --verbose
     """
     subprocess.run(

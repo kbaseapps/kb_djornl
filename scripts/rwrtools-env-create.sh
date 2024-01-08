@@ -8,6 +8,8 @@ conda create -v -n rwrtools -c conda-forge r-base=4.1.0 r-devtools
 conda activate rwrtools
 git clone https://github.com/dkainer/RWRtoolkit.git
 cd RWRtoolkit
+# see also refdata-load.sh
+git reset --hard 360f33794f7d81c254b7d8d16ef7649d0412f790
 R --no-restore --no-save << HEREDOC
 devtools::install()
 HEREDOC
