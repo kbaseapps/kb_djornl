@@ -1,7 +1,7 @@
 #
 # define display information
 #
-name: RWRtools CV
+name: Find Gene Set Interconnectivity using Cross Validation with RWRtools CV
 
 tooltip: |
     RWRtools CV (Cross Validation) performs cross validation on a single gene
@@ -9,7 +9,7 @@ tooltip: |
 
 screenshots: []
 
-icon: icon.png
+icon: RWRTools.png
 
 #
 # Configure the display and description of parameters
