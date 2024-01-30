@@ -3,8 +3,8 @@
     "authors": [
         "dakota"
     ],
-    "contact": "",
-    "categories": ["active"],
+    "contact": "engage@kbase.us",
+    "categories": ["active","comparative_genomics"],
     "widgets": {
         "input": null,
         "output": null

@@ -1,14 +1,14 @@
 #
 # define display information
 #
-name: RWRtools LOE
+name: Find Functional Context using Lines of Evidence with RWRtools LOE
 
 tooltip: |
     RWRtools LOE (Lines of Evidence) uses RWR to rank genes in the network starting from a Feature Set.
 
 screenshots: []
 
-icon: icon.png
+icon: RWRTools.png
 
 #
 # Configure the display and description of parameters
