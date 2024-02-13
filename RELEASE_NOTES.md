@@ -1,5 +1,6 @@
 # kb_djornl release notes
 =========================================
+
 1.0.3
 -----
 * Fix R dependencies
