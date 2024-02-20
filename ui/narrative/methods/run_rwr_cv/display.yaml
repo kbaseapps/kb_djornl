@@ -81,4 +81,6 @@ description : |
         and use other genes to find its rank), or <b>singletons</b> (one 
         gene is used to find the ranks of all other genes in the gene set). 
         Descriptions of provided multiplexes can be found 
-        <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.</p>
+        <a href="https://github.com/kbaseapps/kb_djornl/blob/main/NETWORKS.md">"here"</a>.
+        <br>A demo Narrative for both RWRtools apps can be found 
+        <a href='https://narrative.kbase.us/narrative/167526'>here</a>.</p>
