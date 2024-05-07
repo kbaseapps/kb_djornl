@@ -52,7 +52,7 @@ jobs:
         # Add token to config
         sed -ie "s/^test_token=.*$/&$KBASE_TEST_TOKEN/g" ./test_local/test.cfg
         # Configure to use CI environment
-        sed -ie "s/appdev/ci/g" ./test_local/test.cfg
+        # sed -ie "s/appdev/ci/g" ./test_local/test.cfg
 
     - name: Run tests
       if: "!contains(github.event.head_commit.message, 'skip ci')"
