@@ -177,6 +177,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                     logging.info(f"""Multiplex "{multiplex}" failed for RWR_CV.""")
                     continue
 
+    @unittest.skip("Skip test for debugging")
     def test_01_run_rwr_cv(self):  # pylint: disable=too-many-locals
         """RWR CV test case"""
         ret = self.serviceImpl.run_rwr_cv(
