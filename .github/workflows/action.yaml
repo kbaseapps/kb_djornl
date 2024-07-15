@@ -36,10 +36,13 @@ jobs:
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       run: |
         # Verify kb_sdk_actions clone worked
-        test -f "$HOME/kb_sdk_actions/bin/kb-sdk" && echo "CI files cloned"
+        test -f "$GITHUB_WORKSPACE/kb_sdk_actions/bin/kb-sdk" && echo "CI files cloned"
         # Pull kb-sdk & create startup script
-        docker pull kbase/kb-sdk
-
+        docker pull ghcr.io/kbase/kb_sdk_patch-develop:br-main
+        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.3/" \
+          "$GITHUB_WORKSPACE/kb_sdk_actions/bin/kb-sdk"
+        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.3/" \
+          "$GITHUB_WORKSPACE/kb_sdk_actions/bin/make_testdir"
         sh $GITHUB_WORKSPACE/kb_sdk_actions/bin/make_testdir && echo "Created test_local"
         test -f "test_local/test.cfg" && echo "Confirmed config exists"
 
