@@ -39,9 +39,9 @@ jobs:
         test -f "$GITHUB_WORKSPACE/kb_sdk_actions/bin/kb-sdk" && echo "CI files cloned"
         # Pull kb-sdk & create startup script
         docker pull ghcr.io/kbase/kb_sdk_patch-develop:br-main
-        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.3/" \
+        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.4/" \
           "$GITHUB_WORKSPACE/kb_sdk_actions/bin/kb-sdk"
-        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.3/" \
+        sed -ie "s/kbase\/kb-sdk/ghcr.io\/kbase\/kb_sdk_patch-develop:br-0.0.4/" \
           "$GITHUB_WORKSPACE/kb_sdk_actions/bin/make_testdir"
         sh $GITHUB_WORKSPACE/kb_sdk_actions/bin/make_testdir && echo "Created test_local"
         test -f "test_local/test.cfg" && echo "Confirmed config exists"
