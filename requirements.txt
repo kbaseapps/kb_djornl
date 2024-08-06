@@ -1,6 +1,5 @@
-PyYAML==6.0.1
 black==20.8b1
 pandas==2.0.3
-packaging==24.0
 pylint==2.6.0
+PyYAML==6.0.1
 releng-client==0.0.1
