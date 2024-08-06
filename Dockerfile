@@ -1,5 +1,6 @@
 FROM kbase/sdkpython:3.8.0
-MAINTAINER KBase developer
+MAINTAINER Dakota Blair
+LABEL org.opencontainers.image.authors="David Dakota Blair <dblair@bnl.gov>"
 
 RUN apt-get update
 RUN apt-get upgrade -y
