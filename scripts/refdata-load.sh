@@ -3,17 +3,20 @@
 set -x
 set -e
 
-# Retrieve static data relation engine
-git clone --depth 1 \
-    https://github.com/kbase/relation_engine.git \
-    /data/relation_engine
 # Retrieve static data exascale_data
-git clone --depth 1 \
+git clone \
     https://github.com/kbase/exascale_data.git \
     /data/exascale_data
+cd /data/exascale_data
+git reset --hard 471e89d4f6aa1b9756b08e66aff3f9191d7dfe84
+# Retrieve static data relation engine
+git clone \
+    https://github.com/kbase/relation_engine.git \
+    /data/relation_engine
+cd /data/relation_engine
+git reset --hard 2a28213cc42c5ee566f17fb7bf46de38e5c17e4d
 # Validate exascale_data using importers.djornl.parser
 pip install -r /data/relation_engine/requirements.txt
-cd /data/relation_engine
 PYTHONUNBUFFERED=yes RES_ROOT_DATA_PATH=/data/exascale_data/prerelease/ \
     python -m importers.djornl.parser --dry-run
 # remove the database file if it exists
