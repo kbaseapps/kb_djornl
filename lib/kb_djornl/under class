@@ -1,0 +1,70 @@
+def _boolish(self, v):
+    if isinstance(v, bool): return v
+    if v is None: return False
+    return str(v).strip().lower() in ('1','true','t','yes','y','on')
+
+def _run_cmd(self, cmd):
+    import subprocess
+    p = subprocess.run(cmd, shell=True, text=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if p.returncode != 0:
+        raise RuntimeError(f"Command failed ({p.returncode}):\n{p.stdout}")
+    return p.stdout
+
+def _feature_set_to_geneset_tsv(self, fs_ref, scratch_dir, set_name_hint=None):
+    import os, uuid
+    objs = self.dfu.get_objects2({'objects': [{'ref': fs_ref}]})['data']
+    if not objs:
+        raise ValueError(f"FeatureSet not found: {fs_ref}")
+    obj = objs[0]
+    data = obj['data']; info = obj['info']
+    fs_name = info[1]
+    set_name = (set_name_hint or fs_name or "FeatureSet").strip()
+
+    feats = set()
+    elements = data.get('elements') or data.get('feature_ids') or {}
+    if isinstance(elements, dict):
+        for _, v in elements.items():
+            if isinstance(v, dict):
+                if isinstance(v.get('feature_id'), str): feats.add(v['feature_id'])
+                if isinstance(v.get('feature_ids'), list):
+                    feats.update([x for x in v['feature_ids'] if isinstance(x, str)])
+                if isinstance(v.get('features'), list):
+                    for f in v['features']:
+                        if isinstance(f, dict):
+                            fid = f.get('feature_id') or f.get('id')
+                            if isinstance(fid, str): feats.add(fid)
+                        elif isinstance(f, str):
+                            feats.add(f)
+            elif isinstance(v, list):
+                for f in v:
+                    if isinstance(f, dict):
+                        fid = f.get('feature_id') or f.get('id')
+                        if isinstance(fid, str): feats.add(fid)
+                    elif isinstance(f, str):
+                        feats.add(f)
+    elif isinstance(elements, list):
+        for f in elements:
+            if isinstance(f, dict):
+                fid = f.get('feature_id') or f.get('id')
+                if isinstance(fid, str): feats.add(fid)
+            elif isinstance(f, str):
+                feats.add(f)
+
+    if not feats:
+        raise ValueError(f"No feature IDs found in FeatureSet {fs_ref}")
+
+    out_path = os.path.join(scratch_dir, f"geneset_{uuid.uuid4().hex}.tsv")
+    with open(out_path, "w") as fh:
+        for fid in sorted(feats):
+            fh.write(f"{set_name}\t{fid}\n")
+    return out_path
+
+def _builtin_multiplex_path(self, multiplex_id):
+    import os
+    mp = {
+        "djornl_v1_10layer": "/kb/module/data/multiplex/djornl_v1_10layer.RData"
+    }.get(multiplex_id)
+    if not mp or not os.path.exists(mp):
+        raise RuntimeError(f"Built-in multiplex '{multiplex_id}' missing at {mp}")
+    return mp

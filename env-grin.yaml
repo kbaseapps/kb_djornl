@@ -1,0 +1,27 @@
+name: grin
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base>=4.2,<4.4
+  - r-igraph            # binary, avoids CRAN compile
+  - r-dnet              # GRIN dep chain (or via Bioc)
+  - r-optparse
+  - r-remotes
+  - r-data.table
+  - r-readr
+  - r-ggplot2
+  - r-dplyr
+  - r-tidyr
+  - r-tibble
+  - r-stringr
+  - git
+  - git-lfs
+  # toolchain/runtime bits to keep R pkgs happy
+  - libcurl
+  - libxml2
+  - openssl
+  - libgit2
+  - _libgcc_mutex=0.1
+  - libstdcxx-ng
+  - libgcc-ng

@@ -1,0 +1,83 @@
+#BEGIN run_grin
+def run_grin(self, ctx, params):
+    """
+    Non-advanced UI: feature_set_ref, multiplex_id, output_name.
+    Advanced: restart, tau_csv, verbosity, plot, simple_filenames.
+    """
+    import os, uuid, shlex
+
+    ws = params.get('workspace_name')
+    if not ws:
+        raise ValueError("workspace_name is required")
+
+    fs_ref = params.get('feature_set_ref')
+    if not fs_ref:
+        raise ValueError("feature_set_ref (KBaseCollections.FeatureSet) is required")
+
+    multiplex_id = (params.get('multiplex_id') or 'djornl_v1_10layer').strip()
+    output_name = (params.get('output_name') or 'GRIN_Report').strip()
+
+    # Advanced defaults
+    restart = float(params.get('restart', 0.7))
+    tau_csv = params.get('tau_csv', '1,1,1,1,1,1,1,1,1,1')
+    verbosity = int(params.get('verbosity', 0))
+    plot_flag = '-p' if self._boolish(params.get('plot')) else ''
+    simple_flag = '-s' if self._boolish(params.get('simple_filenames', 1)) else ''
+    verbose_flag = '-v' if verbosity > 0 else ''
+
+    # Scratch and output
+    safe_label = "".join(c if c.isalnum() or c in ('-', '_') else "_" for c in output_name)
+    outdir = os.path.join(self.scratch, f"{safe_label}_{uuid.uuid4().hex}")
+    os.makedirs(outdir, exist_ok=True)
+
+    # FeatureSet -> GRIN TSV (use FeatureSet name; no run label)
+    geneset_tsv = self._feature_set_to_geneset_tsv(fs_ref, self.scratch, set_name_hint=None)
+
+    # Built-in multiplex only
+    multiplex = self._builtin_multiplex_path(multiplex_id)
+
+    # Call GRIN (no -m flag)
+    RSCRIPT = "/usr/local/bin/micromamba run -n grin Rscript"
+    GRIN_R  = "/opt/GRIN/R/GRIN.R"
+    cmd = (
+        f"{RSCRIPT} {shlex.quote(GRIN_R)} "
+        f"-d {shlex.quote(multiplex)} "
+        f"-g {shlex.quote(geneset_tsv)} "
+        f"-r {restart} "
+        f"-t {shlex.quote(tau_csv)} "
+        f"-o {shlex.quote(outdir)} "
+        f"{plot_flag} {simple_flag} {verbose_flag}"
+    )
+    log = self._run_cmd(cmd)
+
+    # HTML log + attachments
+    html_dir = os.path.join(outdir, "html"); os.makedirs(html_dir, exist_ok=True)
+    with open(os.path.join(html_dir, "index.html"), "w") as fh:
+        fh.write("<h2>GRIN finished</h2>\n<h3>Command</h3>\n")
+        fh.write(f"<pre>{cmd}</pre>\n<h3>Log</h3>\n<pre>{log}</pre>\n")
+
+    attachments = []
+    for fname in ("retained_genes.txt","removed_genes.txt","duplicates.txt","not_in_multiplex.txt"):
+        fpath = os.path.join(outdir, fname)
+        if os.path.exists(fpath): attachments.append(fpath)
+
+    # Package html dir
+    zip_path = self.dfu.pack_file({
+        'file_path': html_dir, 'pack': 'zip',
+        'output_file_name': f'{safe_label}.zip'
+    })['file_path']
+    html_sid = self.dfu.file_to_shock({'file_path': zip_path, 'make_handle': 0})['shock_id']
+    file_links = []
+    for f in attachments:
+        sid = self.dfu.file_to_shock({'file_path': f, 'make_handle': 0})['shock_id']
+        file_links.append({'shock_id': sid, 'name': os.path.basename(f), 'label': os.path.basename(f)})
+
+    rep = self.kbr.create_extended_report({
+        'workspace_name': ws,
+        'message': f"GRIN completed: {safe_label}",
+        'direct_html_link_index': 0,
+        'html_links': [{'shock_id': html_sid, 'name': 'index.html', 'label': 'Open report'}],
+        'file_links': file_links
+    })
+    return [{'report_name': rep['name'], 'report_ref': rep['ref']}]
+#END run_grin

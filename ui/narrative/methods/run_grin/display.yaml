@@ -1,0 +1,44 @@
+name: "GRIN: Gene-set Refinement"
+tooltip: "Refine a FeatureSet against a built-in DJORNL multiplex using GRIN (R)."
+icon: null
+screenshots: []
+
+parameters:
+  feature_set_ref:
+    ui-name: "Gene Set"
+    ui-class: ref
+    data-type: KBaseCollections.FeatureSet
+    short-hint: "Pick a FeatureSet from this Narrative"
+
+  multiplex_id:
+    ui-name: "Multiplex"
+    short-hint: "Choose a built-in multiplex (no custom uploads)."
+
+  output_name:
+    ui-name: "Output name"
+    short-hint: "Base name for the report and files"
+
+  # Advanced
+  restart:
+    ui-name: "(Advanced) Restart probability (-r)"
+    short-hint: "0–1; default 0.7"
+
+  tau_csv:
+    ui-name: "(Advanced) Tau per layer (-t)"
+    short-hint: "Comma-separated weights per layer (e.g., 1,1,1,...)"
+
+  verbosity:
+    ui-name: "(Advanced) Verbosity (-v)"
+    short-hint: "0 = quiet; >0 = verbose"
+
+  plot:
+    ui-name: "(Advanced) Generate plots (-p)"
+    short-hint: "Enable GRIN plotting"
+
+  simple_filenames:
+    ui-name: "(Advanced) Simple filenames (-s)"
+    short-hint: "Use simplified output filenames"
+
+description: >
+  Select a FeatureSet and a built-in DJORNL multiplex. The app converts the FeatureSet to
+  the GRIN TSV format, runs GRIN, and returns retained/removed lists plus an HTML log.

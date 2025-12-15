@@ -11,4 +11,6 @@ module kb_djornl {
     funcdef run_rwr_cv(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 
     funcdef run_rwr_loe(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
+
+    funcdef run_grin(mapping<string,UnspecifiedObject> params) returns (ReportResults output) authentication required;
 };
