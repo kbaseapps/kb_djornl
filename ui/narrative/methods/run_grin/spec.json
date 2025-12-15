@@ -5,7 +5,6 @@
   "categories": ["expression", "active"],
   "widgets": { "input": null, "output": "no-display" },
   "job_id_output_field": "docker",
-
   "parameters": [
     {
       "id": "feature_set_ref",
@@ -34,8 +33,6 @@
       "advanced": false,
       "default_values": ["GRIN_Report"]
     },
-
-    /* Advanced */
     {
       "id": "restart",
       "field_type": "text",
@@ -77,10 +74,9 @@
       "default_values": ["1"]
     }
   ],
-
   "behavior": {
     "service-mapping": {
-      "url": "service_wizard",
+      "url": "",
       "name": "kb_djornl",
       "method": "run_grin",
       "input_mapping": [
@@ -88,7 +84,6 @@
         { "input_parameter": "feature_set_ref",  "target_property": "feature_set_ref" },
         { "input_parameter": "multiplex_id",     "target_property": "multiplex_id" },
         { "input_parameter": "output_name",      "target_property": "output_name" },
-
         { "input_parameter": "restart",          "target_property": "restart" },
         { "input_parameter": "tau_csv",          "target_property": "tau_csv" },
         { "input_parameter": "verbosity",        "target_property": "verbosity" },
