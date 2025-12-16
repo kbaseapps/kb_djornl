@@ -10,9 +10,6 @@ import json
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
 from installed_clients.KBaseReportClient import KBaseReport
-from installed_clients.FeatureSetUtilsClient import FeatureSetUtils
-
-
 
 from . import run_rwr_cv, run_rwr_loe
 
@@ -78,6 +75,57 @@ class kb_djornl:
             raise RuntimeError(f"Built-in multiplex '{multiplex_id}' missing at {mp}")
         return mp
 
+    def _find_first_existing(self, paths):
+        for p in paths:
+            if p and os.path.exists(p):
+                return p
+        return None
+
+    def _read_grin_retained_gene_symbols(self, path):
+        """
+        Read GRIN retained table like:
+          setid  gene_symbol  rank  weight  set
+          arabi  AT5G...      1600  1       Retained
+
+        Returns: de-duped list of gene_symbol in file order.
+        Filters to rows where last column == 'Retained' (case-insensitive) when present.
+        """
+        if not path or not os.path.exists(path):
+            return []
+
+        genes = []
+        seen = set()
+
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+
+                low = line.lower()
+                if low.startswith("setid") or low.startswith("#"):
+                    continue
+
+                parts = line.split("\t") if "\t" in line else line.split()
+                if len(parts) < 2:
+                    continue
+
+                gene = (parts[1] or "").strip()
+                if not gene:
+                    continue
+
+                # If there's a "set/status" column, keep only Retained rows
+                if len(parts) >= 5:
+                    status = (parts[4] or "").strip().lower()
+                    if status and status != "retained":
+                        continue
+
+                if gene not in seen:
+                    seen.add(gene)
+                    genes.append(gene)
+
+        return genes
+
     # Inline report (same cell) with downloadable HTML and created objects
     def _mk_report_inline(self, ws, index_html_text, index_html_file, attachments, message, objects_created=None):
         """
@@ -131,18 +179,23 @@ class kb_djornl:
         rep = self.report.create_extended_report(report_params)
         return {'report_name': rep['name'], 'report_ref': rep['ref']}
 
-    # Save a new FeatureSet from retained_genes.txt by filtering the source FeatureSet
+    # Save a new FeatureSet from GRIN retained table by filtering the source FeatureSet
     def _save_retained_feature_set(self, ws_name, source_fs_ref, retained_txt_path, output_name):
-        if not os.path.exists(retained_txt_path):
+        if not retained_txt_path or not os.path.exists(retained_txt_path):
             return None, None
 
-        # Read retained gene IDs (first token per non-empty line)
-        retained = []
-        with open(retained_txt_path, "r", encoding="utf-8", errors="ignore") as fh:
-            for line in fh:
-                tok = line.strip().split()
-                if tok:
-                    retained.append(tok[0])
+        # Read retained IDs from GRIN retained table (gene_symbol col)
+        retained = self._read_grin_retained_gene_symbols(retained_txt_path)
+
+        # Fallback: if file isn't in the GRIN table format, try first token per line
+        if not retained:
+            retained = []
+            with open(retained_txt_path, "r", encoding="utf-8", errors="ignore") as fh:
+                for line in fh:
+                    tok = line.strip().split()
+                    if tok and tok[0].lower() not in ("setid", "gene_symbol"):
+                        retained.append(tok[0])
+
         retained_set = set(retained)
         if not retained_set:
             return None, None
@@ -153,9 +206,14 @@ class kb_djornl:
         src_info = src_obj['info']  # [obj_id, name, type, save_date, ver, saved_by, ws_id, ws_name, checksum, size, meta]
         src_name = src_info[1]
 
-        # Filter element_ordering
+        # Filter element_ordering (preserve original order)
         element_ordering_in = src_data.get('element_ordering', [])
         element_ordering_out = [fid for fid in element_ordering_in if fid in retained_set]
+
+        # If none matched (IDs mismatch), still allow saving as ordering=retained list
+        # (but usually you'll want to ensure the input FS uses ATxG ids)
+        if not element_ordering_out and retained:
+            element_ordering_out = retained
 
         # Filter elements while preserving structure
         elements_in = src_data.get('elements')
@@ -262,7 +320,7 @@ class kb_djornl:
     def run_grin(self, ctx, params):
         """
         Run GRIN inside kb_djornl.
-        Non-advanced: feature_set_ref (KBaseCollections.FeatureSet), multiplex_id (built-in only), output_name.
+        Non-advanced: feature_set_ref (KBaseCollections.FeatureSet), multiplex_id, output_name.
         Advanced: restart, tau_csv (and any other flags you expose).
         """
         #BEGIN run_grin
@@ -355,18 +413,42 @@ pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radiu
             fh.write(index_html_text)
 
         # Attach outputs if present
-        retained_path = os.path.join(outdir, "retained_genes.txt")
         attachments = []
-        for fname in ("retained_genes.txt", "removed_genes.txt", "duplicates.txt", "not_in_multiplex.txt"):
+
+        # Prefer GRIN default retained file name
+        retained_candidates = [
+            os.path.join(outdir, "GRIN__default__Retained_Genes.txt"),
+            os.path.join(outdir, "retained_genes.txt"),
+            os.path.join(outdir, "retained_genes.tsv"),
+        ]
+        retained_path = self._find_first_existing(retained_candidates)
+
+        # Collect common sidecar files (add more as you discover GRIN outputs)
+        sidecars = [
+            "GRIN__default__Retained_Genes.txt",
+            "GRIN__default__Removed_Genes.txt",
+            "GRIN__default__Duplicates.txt",
+            "GRIN__default__Not_In_Multiplex.txt",
+            "retained_genes.txt",
+            "removed_genes.txt",
+            "duplicates.txt",
+            "not_in_multiplex.txt",
+        ]
+        for fname in sidecars:
             fpath = os.path.join(outdir, fname)
             if os.path.exists(fpath):
                 attachments.append(fpath)
 
-        # --- Create a FeatureSet from retained genes ---
-        fs_new_ref, fs_new_name = self._save_retained_feature_set(ws, fs_ref, retained_path, output_name)
+        # --- Create a FeatureSet from retained genes (subset of the input FeatureSet) ---
+        fs_new_ref, fs_new_name = (None, None)
+        if retained_path:
+            fs_new_ref, fs_new_name = self._save_retained_feature_set(ws, fs_ref, retained_path, output_name)
+
         objects_created = []
         if fs_new_ref and fs_new_name:
             objects_created.append({'ref': fs_new_ref, 'description': f"GRIN retained FeatureSet ({fs_new_name})"})
+        else:
+            logging.warning("No retained FeatureSet created (retained_path missing or no retained IDs matched).")
 
         # Inline report in same cell + downloadable HTML + created object(s)
         output = self._mk_report_inline(
