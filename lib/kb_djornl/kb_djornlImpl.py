@@ -5,6 +5,7 @@ import os
 import uuid
 import shlex
 import subprocess
+import json
 
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
@@ -12,9 +13,9 @@ from installed_clients.KBaseReportClient import KBaseReport
 
 from . import run_rwr_cv, run_rwr_loe
 
-# Call R via micromamba 'grin' env
-RSCRIPT = "/usr/local/bin/micromamba run -n grin Rscript"
-GRIN_R  = "/opt/GRIN/R/GRIN.R"
+# Call R via your rwrtools env (matches your current setup)
+RSCRIPT = "source activate rwrtools && Rscript"
+GRIN_R  = "/kb/module/GRIN/R/GRIN.R"
 #END_HEADER
 
 
@@ -28,10 +29,6 @@ class kb_djornl:
     '''
 
     ######## WARNING FOR GEVENT USERS ####### noqa
-    # Since asynchronous IO can lead to methods - even the same method -
-    # interrupting each other, you must be *very* careful when using global
-    # state. A method could easily clobber the state set by another while
-    # the latter method is running.
     ######################################### noqa
     VERSION = "0.0.2"
     GIT_URL = "git@github.com:kbaseapps/kb_djornl.git"
@@ -56,61 +53,20 @@ class kb_djornl:
             raise RuntimeError(f"Command failed ({p.returncode}):\n{p.stdout}")
         return p.stdout
 
-    # Helper: FeatureSet -> GRIN TSV (set_name<TAB>feature_id)
-    def _feature_set_to_geneset_tsv(self, fs_ref, scratch_dir, set_name_hint=None):
-        objs = self.dfu.get_objects2({'objects': [{'ref': fs_ref}]})['data']
-        if not objs:
-            raise ValueError(f"FeatureSet not found: {fs_ref}")
-        obj = objs[0]
-        data = obj['data']
-        info = obj['info']  # [obj_id, name, type, save_date, ver, saved_by, ws_id, ws_name, checksum, size, meta]
-        fs_name = info[1]
-        set_name = (set_name_hint or fs_name or "FeatureSet").strip()
-
-        feats = set()
-        elements = data.get('elements') or data.get('feature_ids') or {}
-        if isinstance(elements, dict):
-            for _, v in elements.items():
-                if isinstance(v, dict):
-                    if 'feature_id' in v and isinstance(v['feature_id'], str):
-                        feats.add(v['feature_id'])
-                    if 'feature_ids' in v and isinstance(v['feature_ids'], list):
-                        feats.update([x for x in v['feature_ids'] if isinstance(x, str)])
-                    if 'features' in v and isinstance(v['features'], list):
-                        for f in v['features']:
-                            if isinstance(f, dict):
-                                fid = f.get('feature_id') or f.get('id')
-                                if isinstance(fid, str):
-                                    feats.add(fid)
-                            elif isinstance(f, str):
-                                feats.add(f)
-                elif isinstance(v, list):
-                    for f in v:
-                        if isinstance(f, dict):
-                            fid = f.get('feature_id') or f.get('id')
-                            if isinstance(fid, str):
-                                feats.add(fid)
-                        elif isinstance(f, str):
-                            feats.add(f)
-        elif isinstance(elements, list):
-            for f in elements:
-                if isinstance(f, dict):
-                    fid = f.get('feature_id') or f.get('id')
-                    if isinstance(fid, str):
-                        feats.add(fid)
-                elif isinstance(f, str):
-                    feats.add(f)
-
-        if not feats:
-            raise ValueError(f"No feature IDs found in FeatureSet {fs_ref}")
-
-        out_path = os.path.join(scratch_dir, f"geneset_{uuid.uuid4().hex}.tsv")
-        with open(out_path, "w") as fh:
-            for fid in sorted(feats):
-                fh.write(f"{set_name}\t{fid}\n")
-        return out_path
+    def _get_genes_from_featureset(self, featureset_ref, dfu):
+        """Read genes from a FeatureSet (expects 'element_ordering')."""
+        featureset_response = dfu.get_objects({"object_refs": [featureset_ref]})
+        featureset = featureset_response["data"][0]["data"]
+        return featureset.get("element_ordering", [])
 
     # Helper: map built-in multiplex IDs -> baked-in file paths
+    def _load_multiplexes(self):
+        """Load the multiplex definitions"""
+        multiplexes_path = os.path.join("/kb/module/data/multiplexes.json")
+        with open(multiplexes_path) as multiplexes_file:
+            multiplexes = json.load(multiplexes_file)
+        return multiplexes
+
     def _builtin_multiplex_path(self, multiplex_id):
         mp = {
             "djornl_v1_10layer": "/kb/module/data/multiplex/djornl_v1_10layer.RData"
@@ -119,37 +75,139 @@ class kb_djornl:
             raise RuntimeError(f"Built-in multiplex '{multiplex_id}' missing at {mp}")
         return mp
 
-    # Helper: create report with zipped HTML + file attachments
-    def _mk_report(self, ws, html_dir, attachments, message):
+    # Inline report (same cell) with downloadable HTML and created objects
+    def _mk_report_inline(self, ws, index_html_text, index_html_file, attachments, message, objects_created=None):
+        """
+        Create a KBase extended report that renders HTML inline AND provides downloadable artifacts.
+
+        Current KBaseReport validation requires:
+          - if 'html_links' is provided, 'direct_html_link_index' must be set.
+        So we upload index.html into html_links[0] and set direct_html_link_index=0.
+        """
         html_links, file_links = [], []
 
-        # Zip HTML dir and upload
-        zip_path = self.dfu.pack_file({
-            'file_path': html_dir,
-            'pack': 'zip',
-            'output_file_name': f"{os.path.basename(html_dir)}.zip"
-        })['file_path']
-        html_sid = self.dfu.file_to_shock({'file_path': zip_path, 'make_handle': 0})['shock_id']
-        html_links.append({'shock_id': html_sid, 'name': 'index.html', 'label': 'Open report'})
+        # Upload HTML file (index.html) as Shock + html_links
+        if index_html_file and os.path.exists(index_html_file):
+            index_sid = self.dfu.file_to_shock(
+                {'file_path': index_html_file, 'make_handle': 0}
+            )['shock_id']
+            html_links.append({
+                'shock_id': index_sid,
+                'name': 'index.html',
+                'label': 'Download HTML report'
+            })
 
-        # Upload attachments (if present)
+        # Upload extra files (retained/removed lists, etc.)
         for f in attachments or []:
-            if os.path.exists(f):
+            if f and os.path.exists(f):
                 sid = self.dfu.file_to_shock({'file_path': f, 'make_handle': 0})['shock_id']
-                file_links.append({'shock_id': sid, 'name': os.path.basename(f), 'label': os.path.basename(f)})
+                file_links.append({
+                    'shock_id': sid,
+                    'name': os.path.basename(f),
+                    'label': os.path.basename(f)
+                })
 
-        rep = self.report.create_extended_report({
+        # Build report params safely (only include lists if non-empty)
+        report_params = {
             'workspace_name': ws,
-            'message': message,
-            'direct_html_link_index': 0 if html_links else None,
-            'html_links': html_links,
-            'file_links': file_links
-        })
+            'objects_created': objects_created or [],
+            'message': message
+        }
+
+        # Prefer html_links + direct_html_link_index for inline rendering
+        if html_links:
+            report_params['html_links'] = html_links
+            report_params['direct_html_link_index'] = 0
+        else:
+            # Fallback: if for some reason we couldn't upload index.html
+            report_params['direct_html'] = index_html_text or "<html><body><pre>No HTML was generated.</pre></body></html>"
+
+        if file_links:
+            report_params['file_links'] = file_links
+
+        rep = self.report.create_extended_report(report_params)
         return {'report_name': rep['name'], 'report_ref': rep['ref']}
+
+    # Save a new FeatureSet from retained_genes.txt by filtering the source FeatureSet
+    def _save_retained_feature_set(self, ws_name, source_fs_ref, retained_txt_path, output_name):
+        if not os.path.exists(retained_txt_path):
+            return None, None
+
+        # Read retained gene IDs (first token per non-empty line)
+        retained = []
+        with open(retained_txt_path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                tok = line.strip().split()
+                if tok:
+                    retained.append(tok[0])
+        retained_set = set(retained)
+        if not retained_set:
+            return None, None
+
+        # Load source FeatureSet
+        src_obj = self.dfu.get_objects({'object_refs': [source_fs_ref]})['data'][0]
+        src_data = src_obj['data']
+        src_info = src_obj['info']  # [obj_id, name, type, save_date, ver, saved_by, ws_id, ws_name, checksum, size, meta]
+        src_name = src_info[1]
+
+        # Filter element_ordering
+        element_ordering_in = src_data.get('element_ordering', [])
+        element_ordering_out = [fid for fid in element_ordering_in if fid in retained_set]
+
+        # Filter elements while preserving structure
+        elements_in = src_data.get('elements')
+        elements_out = {}
+        if isinstance(elements_in, dict):
+            for k, v in elements_in.items():
+                if not isinstance(v, dict):
+                    continue
+                new_v = None
+                if 'feature_ids' in v and isinstance(v['feature_ids'], list):
+                    ids = [fid for fid in v['feature_ids'] if fid in retained_set]
+                    if ids:
+                        new_v = v.copy()
+                        new_v['feature_ids'] = ids
+                elif 'features' in v and isinstance(v['features'], list):
+                    kept = []
+                    for f in v['features']:
+                        if isinstance(f, dict):
+                            fid = f.get('feature_id') or f.get('id')
+                            if isinstance(fid, str) and fid in retained_set:
+                                kept.append(f)
+                        elif isinstance(f, str) and f in retained_set:
+                            kept.append(f)
+                    if kept:
+                        new_v = v.copy()
+                        new_v['features'] = kept
+                if new_v:
+                    elements_out[k] = new_v
+
+        new_data = {
+            'description': f"GRIN retained subset of {src_name}",
+            'element_ordering': element_ordering_out
+        }
+        if elements_out:
+            new_data['elements'] = elements_out
+
+        # Save new FeatureSet
+        ws_id = self.dfu.ws_name_to_id(ws_name)
+        safe_base = "".join(c if c.isalnum() or c in ('-', '_', '.') else '_' for c in (output_name or 'GRIN'))
+        new_name = f"{safe_base}.GRIN_retained"
+        save_ret = self.dfu.save_objects({
+            'id': ws_id,
+            'objects': [{
+                'type': 'KBaseCollections.FeatureSet',
+                'data': new_data,
+                'name': new_name
+            }]
+        })
+        info = save_ret[0]  # obj_info tuple
+        # ref = ws_id/obj_id/ver
+        new_ref = f"{info[6]}/{info[0]}/{info[4]}"
+        return new_ref, new_name
     #END_CLASS_HEADER
 
-    # config contains contents of config file in a hash or None if it couldn't
-    # be found
+    # config contains contents of config file in a hash or None if it couldn't be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
         self.callback_url = os.environ['SDK_CALLBACK_URL']
@@ -166,65 +224,44 @@ class kb_djornl:
 
     def run_rwr_cv(self, ctx, params):
         """
-        :param params: instance of mapping from String to unspecified object
-        :returns: instance of type "ReportResults" -> structure: parameter
-           "report_name" of String, parameter "report_ref" of String
+        :param params: mapping<string, UnspecifiedObject>
+        :returns: ReportResults {report_name, report_ref}
         """
-        # ctx is the context object
-        # return variables are: output
         #BEGIN run_rwr_cv
         clients = params.get("clients")
         if not clients:
             clients = self.clients
-        config = dict(
-            params=params,
-            shared=self.shared_folder,
-        )
+        config = dict(params=params, shared=self.shared_folder)
         output = run_rwr_cv(config, clients)
         #END run_rwr_cv
 
-        # At some point might do deeper type checking...
         if not isinstance(output, dict):
-            raise ValueError('Method run_rwr_cv return value ' +
-                             'output is not type dict as required.')
-        # return the results
+            raise ValueError('Method run_rwr_cv return value output is not type dict as required.')
         return [output]
 
     def run_rwr_loe(self, ctx, params):
         """
-        :param params: instance of mapping from String to unspecified object
-        :returns: instance of type "ReportResults" -> structure: parameter
-           "report_name" of String, parameter "report_ref" of String
+        :param params: mapping<string, UnspecifiedObject>
+        :returns: ReportResults {report_name, report_ref}
         """
-        # ctx is the context object
-        # return variables are: output
         #BEGIN run_rwr_loe
         clients = params.get("clients")
         if not clients:
             clients = self.clients
-        config = dict(
-            params=params,
-            shared=self.shared_folder,
-        )
+        config = dict(params=params, shared=self.shared_folder)
         output = run_rwr_loe(config, clients)
         #END run_rwr_loe
 
-        # At some point might do deeper type checking...
         if not isinstance(output, dict):
-            raise ValueError('Method run_rwr_loe return value ' +
-                             'output is not type dict as required.')
-        # return the results
+            raise ValueError('Method run_rwr_loe return value output is not type dict as required.')
         return [output]
 
     def run_grin(self, ctx, params):
         """
         Run GRIN inside kb_djornl.
-        UI (non-advanced): feature_set_ref (KBaseCollections.FeatureSet),
-                           multiplex_id (built-in only),
-                           output_name.
-        Advanced: restart, tau_csv, verbosity, plot, simple_filenames.
+        Non-advanced: feature_set_ref (KBaseCollections.FeatureSet), multiplex_id (built-in only), output_name.
+        Advanced: restart, tau_csv (and any other flags you expose).
         """
-        # return variables are: output
         #BEGIN run_grin
         ws = params.get('workspace_name')
         if not ws:
@@ -234,66 +271,113 @@ class kb_djornl:
         if not fs_ref:
             raise ValueError("feature_set_ref (KBaseCollections.FeatureSet) is required")
 
-        multiplex_id = (params.get('multiplex_id') or 'djornl_v1_10layer').strip()
+        multiplex_id = params.get('multiplex_id')
         output_name = (params.get('output_name') or 'GRIN_Report').strip()
 
         # Advanced defaults
         restart = float(params.get('restart', 0.7))
         tau_csv = params.get('tau_csv', '1,1,1,1,1,1,1,1,1,1')
-        verbosity = int(params.get('verbosity', 0))
-        plot_flag = '-p' if self._boolish(params.get('plot')) else ''
-        simple_flag = '-s' if self._boolish(params.get('simple_filenames', 1)) else ''
-        verbose_flag = '-v' if verbosity > 0 else ''
 
-        # Output dir in scratch
+        # Scratch / output folder
         safe_label = "".join(c if c.isalnum() or c in ('-', '_') else "_" for c in output_name)
         outdir = os.path.join(self.shared_folder, f"{safe_label}_{uuid.uuid4().hex}")
         os.makedirs(outdir, exist_ok=True)
 
-        # Convert FeatureSet -> TSV expected by GRIN (use FS name as set_name)
-        geneset_tsv = self._feature_set_to_geneset_tsv(fs_ref, self.shared_folder, set_name_hint=None)
+        # Build seed list TSV for GRIN (use FS content)
+        genelist = self._get_genes_from_featureset(fs_ref, self.dfu)
+        genes_tsv = os.path.join(self.shared_folder, f"geneset_{uuid.uuid4().hex}.tsv")
+        with open(genes_tsv, "w", encoding="utf-8") as f:
+            for gene in genelist:
+                f.write(f"arabi\t{gene}\t1\n")  # (set_name, feature_id, weight)
+        print(f"GRIN seed TSV: {genes_tsv}")
 
-        # Built-in multiplex only
-        multiplex = self._builtin_multiplex_path(multiplex_id)
+        # Multiplex
+        multiplex_path = os.path.join("/data/RWRtools/multiplexes", multiplex_id)
 
-        # Build GRIN command (no run label, no threads)
-        cmd = (
-            f"{RSCRIPT} {shlex.quote(GRIN_R)} "
-            f"-d {shlex.quote(multiplex)} "
-            f"-g {shlex.quote(geneset_tsv)} "
-            f"-r {restart} "
-            f"-t {shlex.quote(tau_csv)} "
-            f"-o {shlex.quote(outdir)} "
-            f"{plot_flag} {simple_flag} {verbose_flag}"
+        # Compose command in env var for GRIN-run.sh
+        rwrtools_env = dict(os.environ)
+        rwrtools_env["GRIN_COMMAND"] = f"""Rscript {GRIN_R}
+  -d '{multiplex_path}'
+  -g '{genes_tsv}'
+  -r '{restart}'
+  -t '{tau_csv}'
+  -o '{outdir}'
+"""
+        subprocess.run(
+            ["/kb/module/scripts/GRIN-run.sh"],
+            check=True,
+            env=rwrtools_env,
         )
 
-        # Execute and capture log
-        log = self._run_cmd(cmd)
-
-        # Create minimal HTML report (command + log)
+        # --- Inline HTML report (same cell) ---
         html_dir = os.path.join(outdir, "html")
         os.makedirs(html_dir, exist_ok=True)
-        with open(os.path.join(html_dir, "index.html"), "w") as fh:
-            fh.write("<h2>GRIN finished</h2>\n<h3>Command</h3>\n")
-            fh.write(f"<pre>{cmd}</pre>\n<h3>Log</h3>\n<pre>{log}</pre>\n")
+        index_html_path = os.path.join(html_dir, "index.html")
 
-        # Attach common outputs if present
+        # read log if present
+        log_text = ""
+        for pth in (os.path.join(outdir, "grin.log"),
+                    os.path.join(outdir, "GRIN.log"),
+                    os.path.join(outdir, "run.log")):
+            if os.path.exists(pth):
+                try:
+                    with open(pth, "r", encoding="utf-8", errors="ignore") as fh:
+                        log_text = fh.read()
+                except Exception:
+                    pass
+                break
+
+        grin_cmd_str = rwrtools_env.get("GRIN_COMMAND", "").strip()
+        index_html_text = f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<title>GRIN results</title>
+<style>
+body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }}
+pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radius: 6px; }}
+.box {{ border: 1px solid #e5e7eb; border-radius: 8px; padding: .75rem; margin: .75rem 0; }}
+</style></head><body>
+<h2>GRIN finished</h2>
+<div class="box"><h3>Summary</h3>
+<ul>
+<li><b>Multiplex:</b> {multiplex_id}</li>
+<li><b>Restart (-r):</b> {restart}</li>
+<li><b>Tau (-t):</b> {tau_csv}</li>
+<li><b>Output folder:</b> {outdir}</li>
+</ul></div>
+<div class="box"><h3>Command</h3><pre>{grin_cmd_str or "(captured by GRIN-run.sh)"}</pre></div>
+<div class="box"><h3>Log</h3><pre>{(log_text or "No log file was found.").strip()}</pre></div>
+</body></html>
+"""
+        with open(index_html_path, "w", encoding="utf-8") as fh:
+            fh.write(index_html_text)
+
+        # Attach outputs if present
+        retained_path = os.path.join(outdir, "retained_genes.txt")
         attachments = []
-        for fname in ("retained_genes.txt", "removed_genes.txt",
-                      "duplicates.txt", "not_in_multiplex.txt"):
+        for fname in ("retained_genes.txt", "removed_genes.txt", "duplicates.txt", "not_in_multiplex.txt"):
             fpath = os.path.join(outdir, fname)
             if os.path.exists(fpath):
                 attachments.append(fpath)
 
-        output = self._mk_report(
-            ws, html_dir, attachments, message=f"GRIN completed: {safe_label}"
+        # --- Create a FeatureSet from retained genes ---
+        fs_new_ref, fs_new_name = self._save_retained_feature_set(ws, fs_ref, retained_path, output_name)
+        objects_created = []
+        if fs_new_ref and fs_new_name:
+            objects_created.append({'ref': fs_new_ref, 'description': f"GRIN retained FeatureSet ({fs_new_name})"})
+
+        # Inline report in same cell + downloadable HTML + created object(s)
+        output = self._mk_report_inline(
+            ws,
+            index_html_text=index_html_text,
+            index_html_file=index_html_path,
+            attachments=attachments,
+            message=f"GRIN completed: {safe_label}",
+            objects_created=objects_created
         )
         #END run_grin
 
-        # At some point might do deeper type checking...
         if not isinstance(output, dict):
-            raise ValueError('Method run_grin return value ' +
-                             'output is not type dict as required.')
+            raise ValueError('Method run_grin return value output is not type dict as required.')
         return [output]
 
     def status(self, ctx):

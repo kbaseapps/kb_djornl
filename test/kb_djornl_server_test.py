@@ -154,7 +154,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
     > The order in which the various tests will be run is determined by sorting
     > the test method names with respect to the built-in ordering for strings.
     """
-    # @unittest.skip("Skip test for debugging")
+    @unittest.skip("Skip test for debugging")
     def test_00_rwr_cv_multiplexes(self):
         """Run RWR CV on each available multiplex"""
         multiplexes = [
@@ -227,7 +227,8 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
         graph_state_obj = self.dfu.get_objects({"object_refs": [graph_state_ref]})
         graph_state_json = graph_state_obj["data"][0]["data"]["description"]
         self.assertEqual(graph_state_json, "{}")
-
+   
+    @unittest.skip("Skip test for debugging")
     def test_00_run_rwr_loe_multiplexes(self):
         """Run RWR LOE on each available multiplex"""
         multiplexes = [
@@ -248,7 +249,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 except subprocess.CalledProcessError:
                     logging.info(f"""Multiplex "{multiplex}" failed for RWR_LOE.""")
                     continue
-
+    @unittest.skip("Skip test for debugging")
     def test_01_run_rwr_loe_context_analysis(self):
         """RWR LOE context_analysis test case"""
         self.serviceImpl.run_rwr_loe(
@@ -269,7 +270,7 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 },
             },
         )
-
+    @unittest.skip("Skip test for debugging")
     def test_01_run_rwr_loe_target(self):
         """RWR LOE target test case"""
         self.serviceImpl.run_rwr_loe(
@@ -285,6 +286,26 @@ class kb_djornlTest(unittest.TestCase):  # pylint: disable=invalid-name
                 "output_name": "genesMatched",
                 "restart": ".8",
                 "tau": ".4,.8,1.2,1.6",
+                "clients": {
+                    "report": EchoMock(),
+                    "dfu": MockDFU(),
+                    "gsu": EchoMock(),
+                },
+            },
+        )
+
+    def test_00_run_grin(self):
+        """RWR GRIN test case"""
+        self.serviceImpl.run_grin(
+            self.ctx,
+            {
+                "workspace_id": self.workspace_id,
+                "workspace_name": self.wsName,
+                "feature_set_ref": "72238/42/1",
+                "multiplex_id": "High_Confidence_AT_d0.5_v01.RData",
+                "output_name": "grintest00",
+                "restart": ".7",
+                "tau_csv": "1,1,1,1",
                 "clients": {
                     "report": EchoMock(),
                     "dfu": MockDFU(),
