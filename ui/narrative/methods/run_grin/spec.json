@@ -139,7 +139,7 @@
       "method": "run_grin",
       "input_mapping": [
         { "narrative_system_variable": "workspace", "target_property": "workspace_name" },
-        { "input_parameter": "feature_set_ref",  "target_property": "feature_set_ref" },
+        { "input_parameter": "feature_set_ref",  "target_property": "feature_set_ref", "target_type_transform": "resolved-ref" },
         { "input_parameter": "multiplex_id",     "target_property": "multiplex_id" },
         { "input_parameter": "output_name",      "target_property": "output_name" },
         { "input_parameter": "restart",          "target_property": "restart" },
@@ -148,7 +148,16 @@
         { "input_parameter": "plot",             "target_property": "plot" },
         { "input_parameter": "simple_filenames", "target_property": "simple_filenames" }
       ],
-      "output_mapping": []
+      "output_mapping": [
+        {
+          "service_method_output_path": [0,"report_name"],
+          "target_property": "report_name"
+        },{
+          "service_method_output_path": [0,"report_ref"],
+          "target_property": "report_ref"
+        }
+      ]
     }
-  }
+  },
+  "job_id_output_field": "docker"
 }
