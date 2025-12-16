@@ -10,6 +10,9 @@ import json
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
 from installed_clients.KBaseReportClient import KBaseReport
+from installed_clients.FeatureSetUtilsClient import FeatureSetUtils
+
+
 
 from . import run_rwr_cv, run_rwr_loe
 

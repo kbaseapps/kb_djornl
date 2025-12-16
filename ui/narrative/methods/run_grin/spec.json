@@ -8,11 +8,14 @@
   "parameters": [
     {
       "id": "feature_set_ref",
-      "field_type": "text",
       "optional": false,
       "allow_multiple": false,
       "advanced": false,
-      "default_values": [""]
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+          "valid_ws_types" : [ "KBaseCollections.FeatureSet" ]
+      }
     },
     {
       "id": "multiplex_id",
@@ -21,10 +24,65 @@
       "allow_multiple": false,
       "advanced": false,
       "default_values": ["djornl_v1_10layer"],
-      "options": [
-        { "value": "djornl_v1_10layer", "display": "DJORNL 10-layer multiplex (built-in)" }
-      ]
-    },
+            "dropdown_options": {
+                "options": [
+                    {
+                        "value": "Comprehensive_Network_AT_d0.5_v02.RData",
+                        "display": "Comprehensive Network",
+                        "id": "Comprehensive_Network_AT_d0.5_v02.RData",
+                        "ui-name": "Comprehensive Network"
+                    },
+                    {
+                        "value": "Close_To_Phenotype_AT_d0.5_v01.RData",
+                        "display": "Close to Phenotype",
+                        "id": "Close_To_Phenotype_AT_d0.5_v01.RData",
+                        "ui-name": "Close to Phenotype"
+                    },
+                    {
+                        "value": "Expression_Regulation_AT_d0.5_v01.RData",
+                        "display": "Expression/Regulation",
+                        "id": "Expression_Regulation_AT_d0.5_v01.RData",
+                        "ui-name": "Expression/Regulation"
+                    },
+                    {
+                        "value": "GO_AT_d0.5_v01.RData",
+                        "display": "GO",
+                        "id": "GO_AT_d0.5_v01.RData",
+                        "ui-name": "GO"
+                    },
+                    {
+                        "value": "High_Confidence_AT_d0.5_v01.RData",
+                        "display": "High Confidence",
+                        "id": "High_Confidence_AT_d0.5_v01.RData",
+                        "ui-name": "High Confidence"
+                    },
+                    {
+                        "value": "Metabolic_AT_d0.5_v01.RData",
+                        "display": "Metabolic",
+                        "id": "Metabolic_AT_d0.5_v01.RData",
+                        "ui-name": "Metabolic"
+                    },
+                    {
+                        "value": "Ontology_AT_d0.5_v01.RData",
+                        "display": "Ontology",
+                        "id": "Ontology_AT_d0.5_v01.RData",
+                        "ui-name": "Ontology"
+                    },
+                    {
+                        "value": "Predicted_Regulation_AT_d0.5_v02.RData",
+                        "display": "Predicted Regulation",
+                        "id": "Predicted_Regulation_AT_d0.5_v02.RData",
+                        "ui-name": "Predicted Regulation"
+                    },
+                    {
+                        "value": "Unknown_Function_AT_d0.5_v01.RData",
+                        "display": "Unknown Function",
+                        "id": "Unknown_Function_AT_d0.5_v01.RData",
+                        "ui-name": "Unknown Function"
+                    }
+                ]
+            }
+        },
     {
       "id": "output_name",
       "field_type": "text",
