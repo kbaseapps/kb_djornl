@@ -6,6 +6,8 @@ import uuid
 import shlex
 import subprocess
 import json
+import pandas as pd
+
 
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.GenomeSearchUtilClient import GenomeSearchUtil
@@ -81,191 +83,219 @@ class kb_djornl:
                 return p
         return None
 
-    def _read_grin_retained_gene_symbols(self, path):
-        """
-        Read GRIN retained table like:
-          setid  gene_symbol  rank  weight  set
-          arabi  AT5G...      1600  1       Retained
+    # def _read_grin_retained_gene_symbols(self, path):
+    #     """
+    #     Read GRIN retained table like:
+    #       setid  gene_symbol  rank  weight  set
+    #       arabi  AT5G...      1600  1       Retained
 
-        Returns: de-duped list of gene_symbol in file order.
-        Filters to rows where last column == 'Retained' (case-insensitive) when present.
-        """
-        if not path or not os.path.exists(path):
-            return []
+    #     Returns: de-duped list of gene_symbol in file order.
+    #     Filters to rows where last column == 'Retained' (case-insensitive) when present.
+    #     """
+    #     if not path or not os.path.exists(path):
+    #         return []
 
-        genes = []
-        seen = set()
+    #     genes = []
+    #     seen = set()
 
-        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
+    #     with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+    #         for line in fh:
+    #             line = line.strip()
+    #             if not line:
+    #                 continue
 
-                low = line.lower()
-                if low.startswith("setid") or low.startswith("#"):
-                    continue
+    #             low = line.lower()
+    #             if low.startswith("setid") or low.startswith("#"):
+    #                 continue
 
-                parts = line.split("\t") if "\t" in line else line.split()
-                if len(parts) < 2:
-                    continue
+    #             parts = line.split("\t") if "\t" in line else line.split()
+    #             if len(parts) < 2:
+    #                 continue
 
-                gene = (parts[1] or "").strip()
-                if not gene:
-                    continue
+    #             gene = (parts[1] or "").strip()
+    #             if not gene:
+    #                 continue
 
-                # If there's a "set/status" column, keep only Retained rows
-                if len(parts) >= 5:
-                    status = (parts[4] or "").strip().lower()
-                    if status and status != "retained":
-                        continue
+    #             # If there's a "set/status" column, keep only Retained rows
+    #             if len(parts) >= 5:
+    #                 status = (parts[4] or "").strip().lower()
+    #                 if status and status != "retained":
+    #                     continue
 
-                if gene not in seen:
-                    seen.add(gene)
-                    genes.append(gene)
+    #             if gene not in seen:
+    #                 seen.add(gene)
+    #                 genes.append(gene)
 
-        return genes
+    #     return genes
 
     # Inline report (same cell) with downloadable HTML and created objects
-    def _mk_report_inline(self, ws, index_html_text, index_html_file, attachments, message, objects_created=None):
-        """
-        Create a KBase extended report that renders HTML inline AND provides downloadable artifacts.
-
-        Current KBaseReport validation requires:
-          - if 'html_links' is provided, 'direct_html_link_index' must be set.
-        So we upload index.html into html_links[0] and set direct_html_link_index=0.
-        """
-        html_links, file_links = [], []
-
-        # Upload HTML file (index.html) as Shock + html_links
-        if index_html_file and os.path.exists(index_html_file):
-            index_sid = self.dfu.file_to_shock(
-                {'file_path': index_html_file, 'make_handle': 0}
-            )['shock_id']
-            html_links.append({
-                'shock_id': index_sid,
-                'name': 'index.html',
-                'label': 'Download HTML report'
-            })
-
-        # Upload extra files (retained/removed lists, etc.)
-        for f in attachments or []:
-            if f and os.path.exists(f):
-                sid = self.dfu.file_to_shock({'file_path': f, 'make_handle': 0})['shock_id']
-                file_links.append({
-                    'shock_id': sid,
-                    'name': os.path.basename(f),
-                    'label': os.path.basename(f)
-                })
-
-        # Build report params safely (only include lists if non-empty)
-        report_params = {
-            'workspace_name': ws,
-            'objects_created': objects_created or [],
-            'message': message
+    def _to_shock_link(self, path, label=None):
+        sid = self.dfu.file_to_shock({'file_path': path, 'make_handle': 0})['shock_id']
+        return {
+            'shock_id': sid,
+            'name': os.path.basename(path),
+            'label': label or os.path.basename(path),
         }
 
-        # Prefer html_links + direct_html_link_index for inline rendering
+    def _mk_report_inline(self, ws, index_html_text=None, index_html_file=None,
+                     attachments=None, message="", objects_created=None):
+        html_links = []
+        if index_html_file and os.path.exists(index_html_file):
+            html_links = [self._to_shock_link(index_html_file, "HTML report")]
+
+
+        file_links = [self._to_shock_link(p) for p in (attachments or []) if p and os.path.exists(p)]
+
+        rp = {'workspace_name': ws, 'message': message, 'objects_created': objects_created or []}
         if html_links:
-            report_params['html_links'] = html_links
-            report_params['direct_html_link_index'] = 0
+            rp.update({'html_links': html_links, 'direct_html_link_index': 0})
         else:
-            # Fallback: if for some reason we couldn't upload index.html
-            report_params['direct_html'] = index_html_text or "<html><body><pre>No HTML was generated.</pre></body></html>"
-
+            rp['direct_html'] = index_html_text or "<html><body><pre>No HTML generated.</pre></body></html>"
         if file_links:
-            report_params['file_links'] = file_links
+            rp['file_links'] = file_links
 
-        rep = self.report.create_extended_report(report_params)
+        rep = self.report.create_extended_report(rp)
         return {'report_name': rep['name'], 'report_ref': rep['ref']}
 
-    # Save a new FeatureSet from GRIN retained table by filtering the source FeatureSet
-    def _save_retained_feature_set(self, ws_name, source_fs_ref, retained_txt_path, output_name):
-        if not retained_txt_path or not os.path.exists(retained_txt_path):
-            return None, None
 
-        # Read retained IDs from GRIN retained table (gene_symbol col)
-        retained = self._read_grin_retained_gene_symbols(retained_txt_path)
+    # # Save a new FeatureSet from GRIN retained table by filtering the source FeatureSet
+    # def _save_retained_feature_set(self, ws_name, source_fs_ref, retained_txt_path, output_name):
+    #     if not retained_txt_path or not os.path.exists(retained_txt_path):
+    #         return None, None
 
-        # Fallback: if file isn't in the GRIN table format, try first token per line
-        if not retained:
-            retained = []
-            with open(retained_txt_path, "r", encoding="utf-8", errors="ignore") as fh:
-                for line in fh:
-                    tok = line.strip().split()
-                    if tok and tok[0].lower() not in ("setid", "gene_symbol"):
-                        retained.append(tok[0])
+    #     # Read retained IDs from GRIN retained table (gene_symbol col)
+    #     retained = self._read_grin_retained_gene_symbols(retained_txt_path)
 
-        retained_set = set(retained)
-        if not retained_set:
-            return None, None
+    #     # Fallback: if file isn't in the GRIN table format, try first token per line
+    #     if not retained:
+    #         retained = []
+    #         with open(retained_txt_path, "r", encoding="utf-8", errors="ignore") as fh:
+    #             for line in fh:
+    #                 tok = line.strip().split()
+    #                 if tok and tok[0].lower() not in ("setid", "gene_symbol"):
+    #                     retained.append(tok[0])
 
-        # Load source FeatureSet
-        src_obj = self.dfu.get_objects({'object_refs': [source_fs_ref]})['data'][0]
-        src_data = src_obj['data']
-        src_info = src_obj['info']  # [obj_id, name, type, save_date, ver, saved_by, ws_id, ws_name, checksum, size, meta]
-        src_name = src_info[1]
+    #     retained_set = set(retained)
+    #     if not retained_set:
+    #         return None, None
 
-        # Filter element_ordering (preserve original order)
-        element_ordering_in = src_data.get('element_ordering', [])
-        element_ordering_out = [fid for fid in element_ordering_in if fid in retained_set]
+    #     # Load source FeatureSet
+    #     src_obj = self.dfu.get_objects({'object_refs': [source_fs_ref]})['data'][0]
+    #     src_data = src_obj['data']
+    #     src_info = src_obj['info']  # [obj_id, name, type, save_date, ver, saved_by, ws_id, ws_name, checksum, size, meta]
+    #     src_name = src_info[1]
 
-        # If none matched (IDs mismatch), still allow saving as ordering=retained list
-        # (but usually you'll want to ensure the input FS uses ATxG ids)
-        if not element_ordering_out and retained:
-            element_ordering_out = retained
+    #     # Filter element_ordering (preserve original order)
+    #     element_ordering_in = src_data.get('element_ordering', [])
+    #     element_ordering_out = [fid for fid in element_ordering_in if fid in retained_set]
 
-        # Filter elements while preserving structure
-        elements_in = src_data.get('elements')
-        elements_out = {}
-        if isinstance(elements_in, dict):
-            for k, v in elements_in.items():
-                if not isinstance(v, dict):
-                    continue
-                new_v = None
-                if 'feature_ids' in v and isinstance(v['feature_ids'], list):
-                    ids = [fid for fid in v['feature_ids'] if fid in retained_set]
-                    if ids:
-                        new_v = v.copy()
-                        new_v['feature_ids'] = ids
-                elif 'features' in v and isinstance(v['features'], list):
-                    kept = []
-                    for f in v['features']:
-                        if isinstance(f, dict):
-                            fid = f.get('feature_id') or f.get('id')
-                            if isinstance(fid, str) and fid in retained_set:
-                                kept.append(f)
-                        elif isinstance(f, str) and f in retained_set:
-                            kept.append(f)
-                    if kept:
-                        new_v = v.copy()
-                        new_v['features'] = kept
-                if new_v:
-                    elements_out[k] = new_v
+    #     # If none matched (IDs mismatch), still allow saving as ordering=retained list
+    #     # (but usually you'll want to ensure the input FS uses ATxG ids)
+    #     if not element_ordering_out and retained:
+    #         element_ordering_out = retained
 
-        new_data = {
-            'description': f"GRIN retained subset of {src_name}",
-            'element_ordering': element_ordering_out
+    #     # Filter elements while preserving structure
+    #     elements_in = src_data.get('elements')
+    #     elements_out = {}
+    #     if isinstance(elements_in, dict):
+    #         for k, v in elements_in.items():
+    #             if not isinstance(v, dict):
+    #                 continue
+    #             new_v = None
+    #             if 'feature_ids' in v and isinstance(v['feature_ids'], list):
+    #                 ids = [fid for fid in v['feature_ids'] if fid in retained_set]
+    #                 if ids:
+    #                     new_v = v.copy()
+    #                     new_v['feature_ids'] = ids
+    #             elif 'features' in v and isinstance(v['features'], list):
+    #                 kept = []
+    #                 for f in v['features']:
+    #                     if isinstance(f, dict):
+    #                         fid = f.get('feature_id') or f.get('id')
+    #                         if isinstance(fid, str) and fid in retained_set:
+    #                             kept.append(f)
+    #                     elif isinstance(f, str) and f in retained_set:
+    #                         kept.append(f)
+    #                 if kept:
+    #                     new_v = v.copy()
+    #                     new_v['features'] = kept
+    #             if new_v:
+    #                 elements_out[k] = new_v
+
+    #     new_data = {
+    #         'description': f"GRIN retained subset of {src_name}",
+    #         'element_ordering': element_ordering_out
+    #     }
+    #     if elements_out:
+    #         new_data['elements'] = elements_out
+
+    #     # Save new FeatureSet
+    #     ws_id = self.dfu.ws_name_to_id(ws_name)
+    #     safe_base = "".join(c if c.isalnum() or c in ('-', '_', '.') else '_' for c in (output_name or 'GRIN'))
+    #     new_name = f"{safe_base}.GRIN_retained"
+    #     save_ret = self.dfu.save_objects({
+    #         'id': ws_id,
+    #         'objects': [{
+    #             'type': 'KBaseCollections.FeatureSet',
+    #             'data': new_data,
+    #             'name': new_name
+    #         }]
+    #     })
+    #     info = save_ret[0]  # obj_info tuple
+    #     # ref = ws_id/obj_id/ver
+    #     new_ref = f"{info[6]}/{info[0]}/{info[4]}"
+    #     return new_ref, new_name
+
+
+    def _create_tair10_featureset(
+            self,genes, config, dfu, gsu):  # pylint: disable=too-many-locals
+        """Create an Arabidopsis thaliana featureset from a list of genes."""
+        params = config.get("params")
+        workspace_id = params["workspace_id"]
+        genome_ref = "Phytozome_Genomes/Athaliana_TAIR10"
+        genome_features = gsu.search(
+            {
+                "ref": genome_ref,
+                "limit": len(genes),
+                "structured_query": {"$or": [{"feature_id": gene} for gene in genes]},
+                "sort_by": [["feature_id", True]],
+            }
+        )["features"]
+        genes_found = {feature.get("feature_id") for feature in genome_features}
+        genes_matched = [gene for gene in genes_found if gene in genes_found]
+        genes_unmatched = set(genes).difference(genes_found)
+        if len(genes_unmatched) > 0:
+            genes_unmatched_str = ", ".join(genes_unmatched)
+            logging.warning(
+                """The following genes were not found in the genome: """
+                f"""{genes_unmatched_str}"""
+            )
+        new_feature_set = dict(
+            description=params.get("description", ""),
+            element_ordering=genes_matched,
+            elements={gene: [genome_ref] for gene in genes_matched},
+        )
+        print(new_feature_set)
+        save_objects_params = {
+            "id": workspace_id,
+            "objects": [
+                {
+                    "type": "KBaseCollections.FeatureSet",
+                    "data": new_feature_set,
+                    "name": params["output_name"],
+                }
+        ],
         }
-        if elements_out:
-            new_data['elements'] = elements_out
+        dfu_resp = dfu.save_objects(save_objects_params)[0]
+        featureset_obj_ref = f"{dfu_resp[6]}/{dfu_resp[0]}/{dfu_resp[4]}"
+        return [{"ref": featureset_obj_ref, "description": "Feature Set"}]
 
-        # Save new FeatureSet
-        ws_id = self.dfu.ws_name_to_id(ws_name)
-        safe_base = "".join(c if c.isalnum() or c in ('-', '_', '.') else '_' for c in (output_name or 'GRIN'))
-        new_name = f"{safe_base}.GRIN_retained"
-        save_ret = self.dfu.save_objects({
-            'id': ws_id,
-            'objects': [{
-                'type': 'KBaseCollections.FeatureSet',
-                'data': new_data,
-                'name': new_name
-            }]
-        })
-        info = save_ret[0]  # obj_info tuple
-        # ref = ws_id/obj_id/ver
-        new_ref = f"{info[6]}/{info[0]}/{info[4]}"
-        return new_ref, new_name
+
+    def _grin_to_genelist(self, tsv_path):
+        return pd.read_csv(tsv_path, sep="\t", header=0).iloc[:, 1].dropna().tolist()
+        
+    
+
     #END_CLASS_HEADER
 
     # config contains contents of config file in a hash or None if it couldn't be found
@@ -324,6 +354,10 @@ class kb_djornl:
         Advanced: restart, tau_csv (and any other flags you expose).
         """
         #BEGIN run_grin
+        config = dict(params=params, shared=self.shared_folder)
+        gsu = self.gsu
+        dfu = self.dfu
+        
         ws = params.get('workspace_name')
         if not ws:
             raise ValueError("workspace_name is required")
@@ -422,6 +456,12 @@ pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radiu
             os.path.join(outdir, "retained_genes.tsv"),
         ]
         retained_path = self._find_first_existing(retained_candidates)
+        genes = self._grin_to_genelist(retained_path)
+        print(f"GRIN retained genes: {len(genes)} found in {retained_path}")
+        featureset_info = self._create_tair10_featureset(genes,config,dfu,gsu)
+        print(f"Featureset info: {featureset_info}")
+        print(genes)
+
 
         # Collect common sidecar files (add more as you discover GRIN outputs)
         sidecars = [
@@ -439,16 +479,9 @@ pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radiu
             if os.path.exists(fpath):
                 attachments.append(fpath)
 
-        # --- Create a FeatureSet from retained genes (subset of the input FeatureSet) ---
-        fs_new_ref, fs_new_name = (None, None)
-        if retained_path:
-            fs_new_ref, fs_new_name = self._save_retained_feature_set(ws, fs_ref, retained_path, output_name)
 
-        objects_created = []
-        if fs_new_ref and fs_new_name:
-            objects_created.append({'ref': fs_new_ref, 'description': f"GRIN retained FeatureSet ({fs_new_name})"})
-        else:
-            logging.warning("No retained FeatureSet created (retained_path missing or no retained IDs matched).")
+        objects_created = featureset_info  # already in the correct [{ref,description}, ...] format
+
 
         # Inline report in same cell + downloadable HTML + created object(s)
         output = self._mk_report_inline(

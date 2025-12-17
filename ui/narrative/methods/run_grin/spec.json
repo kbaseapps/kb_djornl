@@ -4,7 +4,6 @@
   "contact": "https://kbase.us/support/",
   "categories": ["expression", "active"],
   "widgets": { "input": null, "output": "no-display" },
-  "job_id_output_field": "docker",
   "parameters": [
     {
       "id": "feature_set_ref",
