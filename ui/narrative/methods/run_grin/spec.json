@@ -138,6 +138,7 @@
       "method": "run_grin",
       "input_mapping": [
         { "narrative_system_variable": "workspace", "target_property": "workspace_name" },
+        { "narrative_system_variable": "workspace_id", "target_property": "workspace_id"},
         { "input_parameter": "feature_set_ref",  "target_property": "feature_set_ref", "target_type_transform": "resolved-ref" },
         { "input_parameter": "multiplex_id",     "target_property": "multiplex_id" },
         { "input_parameter": "output_name",      "target_property": "output_name" },
