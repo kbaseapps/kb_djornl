@@ -2,6 +2,7 @@
 #BEGIN_HEADER
 import logging
 import os
+import re
 import uuid
 import shlex
 import subprocess
