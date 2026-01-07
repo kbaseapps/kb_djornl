@@ -157,7 +157,88 @@ class kb_djornl:
         rep = self.report.create_extended_report(rp)
         return {'report_name': rep['name'], 'report_ref': rep['ref']}
 
-
+    def _get_multiplex_gene_set(self, multiplex_path, outdir):
+        """
+        Attempt to extract the set of gene IDs present in the multiplex (.RData) file.
+        Uses R to load the RData and heuristically pulls node names / dimnames / common gene columns.
+    
+        Returns: set(str) of TAIR-like gene IDs (ATxGxxxxx etc.)
+        Also writes raw extraction output to outdir for debugging.
+        """
+        if not multiplex_path or not os.path.exists(multiplex_path):
+            raise ValueError(f"Multiplex file not found: {multiplex_path}")
+    
+        raw_out_path = os.path.join(outdir, "multiplex_genes_raw.txt")
+    
+        # R snippet: load RData, traverse objects and collect possible gene identifiers
+        r_code = f"""
+    mp <- {json.dumps(multiplex_path)}
+    suppressWarnings(suppressMessages({{
+      load(mp)
+      genes <- character()
+    
+      has_igraph <- requireNamespace("igraph", quietly=TRUE)
+    
+      grab <- function(x, depth=0) {{
+        if (is.null(x)) return()
+        if (depth > 6) return()
+    
+        # igraph nodes
+        if (has_igraph && inherits(x, "igraph")) {{
+          genes <<- c(genes, igraph::V(x)$name)
+          return()
+        }}
+    
+        # matrices / data.frames: dimnames often carry node names
+        if (is.matrix(x) || is.data.frame(x)) {{
+          dn <- dimnames(x)
+          if (!is.null(dn)) genes <<- c(genes, unlist(dn, use.names=FALSE))
+          if (is.data.frame(x)) {{
+            cols <- intersect(names(x), c("gene", "gene_symbol", "feature_id", "id", "name"))
+            for (cc in cols) genes <<- c(genes, as.character(x[[cc]]))
+          }}
+        }}
+    
+        # lists: recurse
+        if (is.list(x)) {{
+          n <- length(x)
+          if (n > 2000) n <- 2000
+          for (i in seq_len(n)) grab(x[[i]], depth+1)
+        }}
+      }}
+    
+      for (nm in ls()) {{
+        grab(get(nm), 0)
+      }}
+    
+      genes <- unique(genes)
+      genes <- genes[!is.na(genes) & nzchar(genes)]
+      cat(genes, sep="\\n")
+    }}))
+    """
+    
+        # Run inside rwrtools env (best chance igraph + deps exist)
+        cmd = f"source activate rwrtools >/dev/null 2>&1 || true; Rscript -e {shlex.quote(r_code)}"
+        proc = subprocess.run(
+            ["bash", "-lc", cmd],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False
+        )
+        raw = proc.stdout or ""
+        with open(raw_out_path, "w", encoding="utf-8") as fh:
+            fh.write(raw)
+    
+        # Filter to TAIR-like IDs to avoid grabbing tons of unrelated strings
+        tair_pat = re.compile(r"^AT[1-5MC]G\d{5}$", re.IGNORECASE)
+        genes = set()
+        for line in raw.splitlines():
+            s = line.strip()
+            if tair_pat.match(s):
+                genes.add(s.upper())
+    
+        return genes
     # # Save a new FeatureSet from GRIN retained table by filtering the source FeatureSet
     # def _save_retained_feature_set(self, ws_name, source_fs_ref, retained_txt_path, output_name):
     #     if not retained_txt_path or not os.path.exists(retained_txt_path):
@@ -294,7 +375,32 @@ class kb_djornl:
     def _grin_to_genelist(self, tsv_path):
         return pd.read_csv(tsv_path, sep="\t", header=0).iloc[:, 1].dropna().tolist()
         
-    
+    def _run_grin_sh(self, env, outdir):
+        """
+        Run GRIN-run.sh but DO NOT raise on failure.
+        Always capture stdout/stderr to a file so users can debug.
+        Returns (returncode, stdout_path, stdout_text)
+        """
+        proc = subprocess.run(
+            ["/kb/module/scripts/GRIN-run.sh"],
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+        out = proc.stdout or ""
+        stdout_path = os.path.join(outdir, "GRIN_run_stdout.txt")
+        with open(stdout_path, "w", encoding="utf-8") as fh:
+            fh.write(out)
+        return proc.returncode, stdout_path, out
+
+
+    def _tail(self, s, n=50000):
+        if not s:
+            return ""
+        return s[-n:] if len(s) > n else s
+
 
     #END_CLASS_HEADER
 
@@ -351,65 +457,161 @@ class kb_djornl:
         """
         Run GRIN inside kb_djornl.
         Non-advanced: feature_set_ref (KBaseCollections.FeatureSet), multiplex_id, output_name.
-        Advanced: restart, tau_csv (and any other flags you expose).
+        Advanced: restart, tau_csv.
         """
         #BEGIN run_grin
         config = dict(params=params, shared=self.shared_folder)
         gsu = self.gsu
         dfu = self.dfu
-        
-        ws = params.get('workspace_name')
+    
+        ws = params.get("workspace_name")
         if not ws:
             raise ValueError("workspace_name is required")
-
-        fs_ref = params.get('feature_set_ref')
+    
+        fs_ref = params.get("feature_set_ref")
         if not fs_ref:
             raise ValueError("feature_set_ref (KBaseCollections.FeatureSet) is required")
-
-        multiplex_id = params.get('multiplex_id')
-        output_name = (params.get('output_name') or 'GRIN_Report').strip()
-
+    
+        multiplex_id = params.get("multiplex_id")
+        if not multiplex_id:
+            raise ValueError("multiplex_id is required")
+    
+        output_name = (params.get("output_name") or "GRIN_Report").strip()
+    
         # Advanced defaults
-        restart = float(params.get('restart', 0.7))
-        tau_csv = params.get('tau_csv', '1,1,1,1,1,1,1,1,1,1')
-
+        restart = float(params.get("restart", 0.7))
+        tau_csv = str(params.get("tau_csv", "1")).strip() or "1"
+    
+        # Ensure workspace_id is available for helpers that expect it
+        try:
+            params.setdefault("workspace_id", dfu.ws_name_to_id(ws))
+        except Exception:
+            pass
+    
         # Scratch / output folder
-        safe_label = "".join(c if c.isalnum() or c in ('-', '_') else "_" for c in output_name)
+        safe_label = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in output_name)
         outdir = os.path.join(self.shared_folder, f"{safe_label}_{uuid.uuid4().hex}")
         os.makedirs(outdir, exist_ok=True)
-
-        # Build seed list TSV for GRIN (use FS content)
-        genelist = self._get_genes_from_featureset(fs_ref, self.dfu)
+    
+        # Multiplex path
+        multiplex_path = os.path.join("/data/RWRtools/multiplexes", multiplex_id)
+        if not os.path.exists(multiplex_path):
+            raise ValueError(f"Multiplex not found: {multiplex_path}")
+    
+        # --- Load genes from input FeatureSet (preserve order, de-dupe) ---
+        input_genes_raw = self._get_genes_from_featureset(fs_ref, dfu)
+        input_genes = []
+        seen = set()
+        for g in (input_genes_raw or []):
+            if not isinstance(g, str):
+                continue
+            gg = g.strip()
+            if not gg:
+                continue
+            if gg in seen:
+                continue
+            seen.add(gg)
+            input_genes.append(gg)
+    
+        # --- Prefilter genes to those present in the multiplex ---
+        multiplex_genes = self._get_multiplex_gene_set(multiplex_path, outdir)
+        if not multiplex_genes:
+            # If we can't infer gene set, proceed without filtering (but this is unusual)
+            genes_kept = list(input_genes)
+            genes_absent = []
+        else:
+            genes_kept = [g for g in input_genes if g.upper() in multiplex_genes]
+            genes_absent = [g for g in input_genes if g.upper() not in multiplex_genes]
+    
+        # Write absent genes file (requested)
+        absent_path = os.path.join(outdir, "GRIN__default__Absent_Genes.txt")
+        with open(absent_path, "w", encoding="utf-8") as fh:
+            fh.write("gene_symbol\n")
+            for g in genes_absent:
+                fh.write(f"{g}\n")
+    
+        # If nothing remains, return report immediately
+        if not genes_kept:
+            html_dir = os.path.join(outdir, "html")
+            os.makedirs(html_dir, exist_ok=True)
+            index_html_path = os.path.join(html_dir, "index.html")
+            index_html_text = f"""<!DOCTYPE html>
+    <html><head><meta charset="utf-8"/><title>GRIN results</title></head><body>
+    <h2>GRIN not run</h2>
+    <p>No genes remained after filtering to multiplex membership.</p>
+    <ul>
+    <li><b>Input genes:</b> {len(input_genes)}</li>
+    <li><b>Absent genes:</b> {len(genes_absent)}</li>
+    </ul>
+    </body></html>
+    """
+            with open(index_html_path, "w", encoding="utf-8") as fh:
+                fh.write(index_html_text)
+    
+            output = self._mk_report_inline(
+                ws,
+                index_html_text=index_html_text,
+                index_html_file=index_html_path,
+                attachments=[absent_path],
+                message="GRIN not run: 0 genes remain after multiplex filtering. See Absent Genes file.",
+                objects_created=[]
+            )
+            #END run_grin
+            if not isinstance(output, dict):
+                raise ValueError("Method run_grin return value output is not type dict as required.")
+            return [output]
+    
+        # --- Build seed TSV for GRIN (filtered) ---
         genes_tsv = os.path.join(self.shared_folder, f"geneset_{uuid.uuid4().hex}.tsv")
         with open(genes_tsv, "w", encoding="utf-8") as f:
-            for gene in genelist:
-                f.write(f"arabi\t{gene}\t1\n")  # (set_name, feature_id, weight)
-        print(f"GRIN seed TSV: {genes_tsv}")
-
-        # Multiplex
-        multiplex_path = os.path.join("/data/RWRtools/multiplexes", multiplex_id)
-
+            for gene in genes_kept:
+                f.write(f"arabi\t{gene}\t1\n")  # (set_name, gene_symbol, weight)
+        print(f"GRIN seed TSV (filtered): {genes_tsv}")
+    
         # Compose command in env var for GRIN-run.sh
         rwrtools_env = dict(os.environ)
         rwrtools_env["GRIN_COMMAND"] = f"""Rscript {GRIN_R}
-  -d '{multiplex_path}'
-  -g '{genes_tsv}'
-  -r '{restart}'
-  -t '{tau_csv}'
-  -o '{outdir}'
-"""
-        subprocess.run(
-            ["/kb/module/scripts/GRIN-run.sh"],
-            check=True,
-            env=rwrtools_env,
-        )
-
-        # --- Inline HTML report (same cell) ---
+      -d '{multiplex_path}'
+      -g '{genes_tsv}'
+      -r '{restart}'
+      -t '{tau_csv}'
+      -o '{outdir}'
+    """
+    
+        # Always capture stdout; do not raise on failure
+        rc, grin_stdout_path, grin_stdout = self._run_grin_sh(rwrtools_env, outdir)
+    
+        # Attach outputs (always include absent + input TSV + stdout)
+        attachments = [absent_path]
+        for p in (genes_tsv, grin_stdout_path):
+            if p and os.path.exists(p):
+                attachments.append(p)
+    
+        # Collect common sidecar files
+        sidecars = [
+            "GRIN__default__Retained_Genes.txt",
+            "GRIN__default__Removed_Genes.txt",
+            "GRIN__default__Duplicates.txt",
+            "GRIN__default__Not_In_Multiplex.txt",
+            "retained_genes.txt",
+            "removed_genes.txt",
+            "duplicates.txt",
+            "not_in_multiplex.txt",
+            "grin.log",
+            "GRIN.log",
+            "run.log",
+        ]
+        for fname in sidecars:
+            fpath = os.path.join(outdir, fname)
+            if os.path.exists(fpath):
+                attachments.append(fpath)
+    
+        # --- HTML report ---
         html_dir = os.path.join(outdir, "html")
         os.makedirs(html_dir, exist_ok=True)
         index_html_path = os.path.join(html_dir, "index.html")
-
-        # read log if present
+    
+        # read GRIN log if present
         log_text = ""
         for pth in (os.path.join(outdir, "grin.log"),
                     os.path.join(outdir, "GRIN.log"),
@@ -421,69 +623,78 @@ class kb_djornl:
                 except Exception:
                     pass
                 break
-
+    
         grin_cmd_str = rwrtools_env.get("GRIN_COMMAND", "").strip()
+        grin_stdout_tail = (grin_stdout or "")[-50000:]
+        status_line = "SUCCESS" if rc == 0 else f"FAILED (exit code {rc})"
+    
         index_html_text = f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/>
-<title>GRIN results</title>
-<style>
-body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }}
-pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radius: 6px; }}
-.box {{ border: 1px solid #e5e7eb; border-radius: 8px; padding: .75rem; margin: .75rem 0; }}
-</style></head><body>
-<h2>GRIN finished</h2>
-<div class="box"><h3>Summary</h3>
-<ul>
-<li><b>Multiplex:</b> {multiplex_id}</li>
-<li><b>Restart (-r):</b> {restart}</li>
-<li><b>Tau (-t):</b> {tau_csv}</li>
-<li><b>Output folder:</b> {outdir}</li>
-</ul></div>
-<div class="box"><h3>Command</h3><pre>{grin_cmd_str or "(captured by GRIN-run.sh)"}</pre></div>
-<div class="box"><h3>Log</h3><pre>{(log_text or "No log file was found.").strip()}</pre></div>
-</body></html>
-"""
+    <html lang="en"><head><meta charset="utf-8"/>
+    <title>GRIN results</title>
+    <style>
+    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }}
+    pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radius: 6px; }}
+    .box {{ border: 1px solid #e5e7eb; border-radius: 8px; padding: .75rem; margin: .75rem 0; }}
+    .small {{ color: #6b7280; font-size: 0.9rem; }}
+    </style></head><body>
+    <h2>GRIN finished</h2>
+    <div class="box">
+      <h3>Summary</h3>
+      <ul>
+        <li><b>Status:</b> {status_line}</li>
+        <li><b>Multiplex:</b> {multiplex_id}</li>
+        <li><b>Restart (-r):</b> {restart}</li>
+        <li><b>Tau (-t):</b> {tau_csv}</li>
+        <li><b>Input genes:</b> {len(input_genes)}</li>
+        <li><b>Absent genes (removed before run):</b> {len(genes_absent)}</li>
+        <li><b>Genes used for GRIN:</b> {len(genes_kept)}</li>
+        <li><b>Output folder:</b> {outdir}</li>
+      </ul>
+      <div class="small">See attached <b>GRIN__default__Absent_Genes.txt</b> for removed genes.</div>
+    </div>
+    <div class="box"><h3>Command</h3><pre>{grin_cmd_str or "(captured by GRIN-run.sh)"}</pre></div>
+    <div class="box">
+      <h3>Log</h3>
+      <pre>{(log_text or "No log file was found.").strip()}</pre>
+      <h3>GRIN-run.sh output (tail)</h3>
+      <pre>{(grin_stdout_tail or "No stdout captured.").strip()}</pre>
+    </div>
+    </body></html>
+    """
         with open(index_html_path, "w", encoding="utf-8") as fh:
             fh.write(index_html_text)
-
-        # Attach outputs if present
-        attachments = []
-
-        # Prefer GRIN default retained file name
+    
+        # If GRIN failed, still return report (do not crash job)
+        if rc != 0:
+            output = self._mk_report_inline(
+                ws,
+                index_html_text=index_html_text,
+                index_html_file=index_html_path,
+                attachments=attachments,
+                message=f"GRIN failed (exit code {rc}). See HTML + attached logs (GRIN_run_stdout.txt).",
+                objects_created=[]
+            )
+            #END run_grin
+            if not isinstance(output, dict):
+                raise ValueError("Method run_grin return value output is not type dict as required.")
+            return [output]
+    
+        # --- GRIN succeeded: create FeatureSet from retained genes ---
         retained_candidates = [
             os.path.join(outdir, "GRIN__default__Retained_Genes.txt"),
             os.path.join(outdir, "retained_genes.txt"),
             os.path.join(outdir, "retained_genes.tsv"),
         ]
         retained_path = self._find_first_existing(retained_candidates)
-        genes = self._grin_to_genelist(retained_path)
-        print(f"GRIN retained genes: {len(genes)} found in {retained_path}")
-        featureset_info = self._create_tair10_featureset(genes,config,dfu,gsu)
-        print(f"Featureset info: {featureset_info}")
-        print(genes)
-
-
-        # Collect common sidecar files (add more as you discover GRIN outputs)
-        sidecars = [
-            "GRIN__default__Retained_Genes.txt",
-            "GRIN__default__Removed_Genes.txt",
-            "GRIN__default__Duplicates.txt",
-            "GRIN__default__Not_In_Multiplex.txt",
-            "retained_genes.txt",
-            "removed_genes.txt",
-            "duplicates.txt",
-            "not_in_multiplex.txt",
-        ]
-        for fname in sidecars:
-            fpath = os.path.join(outdir, fname)
-            if os.path.exists(fpath):
-                attachments.append(fpath)
-
-
-        objects_created = featureset_info  # already in the correct [{ref,description}, ...] format
-
-
-        # Inline report in same cell + downloadable HTML + created object(s)
+    
+        objects_created = []
+        if retained_path and os.path.exists(retained_path):
+            genes_retained = self._grin_to_genelist(retained_path) or []
+            if genes_retained:
+                featureset_info = self._create_tair10_featureset(genes_retained, config, dfu, gsu)
+                if isinstance(featureset_info, list):
+                    objects_created = featureset_info
+    
         output = self._mk_report_inline(
             ws,
             index_html_text=index_html_text,
@@ -493,17 +704,7 @@ pre {{ white-space: pre-wrap; background: #f6f8fa; padding: .75rem; border-radiu
             objects_created=objects_created
         )
         #END run_grin
-
+    
         if not isinstance(output, dict):
-            raise ValueError('Method run_grin return value output is not type dict as required.')
+            raise ValueError("Method run_grin return value output is not type dict as required.")
         return [output]
-
-    def status(self, ctx):
-        #BEGIN_STATUS
-        returnVal = {'state': "OK",
-                     'message': "",
-                     'version': self.VERSION,
-                     'git_url': self.GIT_URL,
-                     'git_commit_hash': self.GIT_COMMIT_HASH}
-        #END_STATUS
-        return [returnVal]
