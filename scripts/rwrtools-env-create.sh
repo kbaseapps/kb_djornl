@@ -18,6 +18,11 @@ install_url("https://cran.r-project.org/src/contrib/Archive/MASS/MASS_7.3-60.0.1
 install_url("https://cran.r-project.org/src/contrib/Archive/igraph/igraph_1.6.0.tar.gz")
 install_url("https://bioconductor.org/packages/3.14/bioc/src/contrib/supraHex_1.32.0.tar.gz")
 install_url("https://cran.r-project.org/src/contrib/Archive/dnet/dnet_1.1.7.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/Archive/googledrive/googledrive_2.1.2.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/Archive/googlesheets4/googlesheets4_1.1.2.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/Archive/readxl/readxl_1.5.0.1.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/tidyverse_2.0.0.tar.gz")
+
 devtools::install()
 
 HEREDOC
