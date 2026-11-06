@@ -21,7 +21,7 @@ install_url("https://cran.r-project.org/src/contrib/Archive/dnet/dnet_1.1.7.tar.
 install_url("https://cran.r-project.org/src/contrib/Archive/googledrive/googledrive_2.1.2.tar.gz")
 install_url("https://cran.r-project.org/src/contrib/Archive/googlesheets4/googlesheets4_1.1.2.tar.gz")
 install_url("https://cran.r-project.org/src/contrib/Archive/readxl/readxl_1.5.0.1.tar.gz")
-install_url("https://cran.r-project.org/src/contrib/tidyverse_2.0.0.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/Archive/tidyverse/tidyverse_1.3.2.tar.gz")
 
 devtools::install()
 
