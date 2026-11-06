@@ -13,7 +13,7 @@ cd RWRtoolkit
 git reset --hard 360f33794f7d81c254b7d8d16ef7649d0412f790
 R --no-restore --no-save << HEREDOC
 require(devtools)
-install.packages("pak")
+install.packages("pak", repos = "http://cran.us.r-project.org")
 pak::pkg_install("url::https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz")
 pak::pkg_install("url::https://cran.r-project.org/src/contrib/Archive/MASS/MASS_7.3-60.0.1.tar.gz")
 pak::pkg_install("url::https://cran.r-project.org/src/contrib/Archive/igraph/igraph_1.6.0.tar.gz")
