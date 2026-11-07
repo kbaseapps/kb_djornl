@@ -13,9 +13,9 @@ cd RWRtoolkit
 git reset --hard 360f33794f7d81c254b7d8d16ef7649d0412f790
 R --no-restore --no-save << HEREDOC
 require(devtools)
-install.packages("pak", repos = "http://cran.us.r-project.org")
+
 # Matrix 1.7 depends on R >= 4.4
-pak::pkg_install("url::https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz")
+install_url("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz")
 devtools::install()
 
 HEREDOC
